@@ -17,6 +17,8 @@ public class MediaServer {
     ProcessBuilder pb;
     Process p;
     InputStream is;
+    Catcher c;
+    BufferedReader br;
 
     int termNum = 0;
     String order = "";
@@ -45,7 +47,7 @@ public class MediaServer {
         });
     }
 
-    private void run() throws IOException {
+    private void run() throws IOException, InterruptedException {
 
         // Make connection and initialize streams
         String myrole = "Server" ;
@@ -82,12 +84,12 @@ public class MediaServer {
                                 "-i", "rtmp://" ,termInfo[2], "/live/mixed",
                                 "-f", "flv", "rtmp://localhost/live/watch");
                         Process p = pb.start();
-                        InputStream is = p.getInputStream();
-                        try {
-                            while(is.read() >= 0); //標準出力だけ読み込めばよい
-                        } finally {
-                            is.close();
-                        }
+                        br = new BufferedReader(new InputStreamReader(p.getInputStream()));
+                        c = new Catcher(br);
+                        c.start();
+                        p.waitFor();
+                        p.destroy();
+                        System.out.println(c.out.toString());
                         break;
 
                     // role: Mixer
@@ -99,12 +101,12 @@ public class MediaServer {
                                 "-filter_complex", "\"[0:v]pad=2*iw[a];", "[a][1:v]overlay=w\"",
                                 "-vcodec", "libx264", "-f", "flv", "rtmp://localhost/live/watch");
                         p = pb.start();
-                        is = p.getInputStream();
-                        try {
-                            while(is.read() >= 0); //標準出力だけ読み込めばよい
-                        } finally {
-                            is.close();
-                        }
+                        br = new BufferedReader(new InputStreamReader(p.getInputStream()));
+                        c = new Catcher(br);
+                        c.start();
+                        p.waitFor();
+                        p.destroy();
+                        System.out.println(c.out.toString());
                         break;
 
                     // role: relay
@@ -117,12 +119,12 @@ public class MediaServer {
                                 "-f", "flv", "rtmp://", myLocalIp, "/live/1",
                                 "-f", "flv", "rtmp://", myLocalIp, "/live/2");
                         p = pb.start();
-                        is = p.getInputStream();
-                        try {
-                            while(is.read() >= 0); //標準出力だけ読み込めばよい
-                        } finally {
-                            is.close();
-                        }
+                        BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
+                        Catcher c = new Catcher(br);
+                        c.start();
+                        p.waitFor();
+                        p.destroy();
+                        System.out.println(c.out.toString());
                         break;
                 }
             }

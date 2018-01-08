@@ -40,7 +40,7 @@ public class LocalMixerTerminalClient {
         });
     }
 
-    private void run() throws IOException {
+    private void run() throws IOException, InterruptedException {
 
         // Make connection and initialize streams
         String myrole = "Server" ;
@@ -70,18 +70,20 @@ public class LocalMixerTerminalClient {
 
                     // role : Mixer
                     case "Local":
+
                         ProcessBuilder pb = new ProcessBuilder("ffmpeg",
                                 "-i", "rtmp://" ,strServerIp, "/live/1",
                                 "-i", "rtmp://" ,strServerIp, "/live/2",
                                 "-filter_complex", "\"[0:v]pad=2*iw[a];", "[a][1:v]overlay=w\"",
                                 "-vcodec", "libx264", "-f", "flv", "rtmp://localhost/live/mixed");
                         Process p = pb.start();
-                        InputStream is = p.getInputStream();
-                        try {
-                            while(is.read() >= 0); //標準出力だけ読み込めばよい
-                        } finally {
-                            is.close();
-                        }
+                        BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
+                        Catcher c = new Catcher(br);
+                        c.start();
+                        p.waitFor();
+                        p.destroy();
+                        System.out.println(c.out.toString());
+
                         break;
 
                     // role: none
@@ -97,6 +99,8 @@ public class LocalMixerTerminalClient {
             }
         }
     }
+
+
     public static void main(String[] args) throws Exception {
         LocalMixerTerminalClient client = new LocalMixerTerminalClient();
         client.frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);

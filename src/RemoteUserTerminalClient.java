@@ -50,7 +50,7 @@ public class RemoteUserTerminalClient {
         });
     }
 
-    private void run() throws IOException {
+    private void run() throws IOException, InterruptedException{
 
         // Make connection and initialize streams
         String myrole = "Server" ;
@@ -100,13 +100,13 @@ public class RemoteUserTerminalClient {
                                 "-filter_complex", "\"[0:v]pad=2*iw[a];", "[a][1:v]overlay=w\"",
                                 "-vcodec", "libx264", "-f", "flv", "rtmp://localhost/live/watch");
                         Process p = pb.start();
-                        InputStream is = p.getInputStream();
-                        try {
-                            while(is.read() >= 0); //標準出力だけ読み込めばよい
-                        } finally {
-                            is.close();
-                        }
-                        System.out.println("ffmpeg closed");
+                        BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
+                        Catcher c = new Catcher(br);
+                        c.start();
+                        p.waitFor();
+                        p.destroy();
+                        System.out.println(c.out.toString());
+
                         break;
                 }
             }
