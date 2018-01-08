@@ -10,49 +10,21 @@ public class MediaServer {
 
     BufferedReader in;
     PrintWriter out;
-    JFrame frame = new JFrame("Chatter");
-    JTextField textField = new JTextField(40);
-    JTextArea messageArea = new JTextArea(8, 40);
-    Runtime runtime = Runtime.getRuntime();
     ProcessBuilder pb;
     Process p;
-    InputStream is;
     Catcher c;
     BufferedReader br;
-
-    int termNum = 0;
-    String order = "";
-
     String[] termInfo;
+
+    String controllerIp = "172.16.126.91";
     // termInfo[0] = msg prefix "START"
     // termInfo[1] = MixerTerminalIP
     // termInfo[2]-[n] = SourceTerminalIP
 
-    public MediaServer() {
-
-        // Layout GUI
-        textField.setEditable(false);
-        messageArea.setEditable(false);
-        frame.getContentPane().add(textField, "North");
-        frame.getContentPane().add(new JScrollPane(messageArea), "Center");
-        frame.pack();
-
-        // Add Listeners
-        textField.addActionListener(new ActionListener() {
-
-            public void actionPerformed(ActionEvent e) {
-                out.println(textField.getText());
-                textField.setText("");
-            }
-        });
-    }
-
-    private void run() throws IOException, InterruptedException {
+    private void run(String cpuPerf) throws IOException, InterruptedException {
 
         // Make connection and initialize streams
-        String myrole = "Server" ;
-        // remote user terminal's ipaddr
-        String controllerIp = "172.16.126.91";
+        String myrole = "StreamingServer" ;
         Socket socket = new Socket(controllerIp, 11111);
         String myLocalIp = Inet4Address.getLocalHost().toString();
         myLocalIp = myLocalIp.substring(myLocalIp.length()-13);
@@ -65,25 +37,25 @@ public class MediaServer {
             String line = in.readLine();
             System.out.println(line);
             if (line.startsWith("SUBMITNAME")) {
-                out.println("Server:strserver:"+ myLocalIp + ":"+30);
+                out.println("Server:strserver:"+ myLocalIp + ":"+cpuPerf);
             } else if (line.startsWith("NAMEACCEPTED")) {
-                textField.setEditable(true);
+                System.out.println("Name Accepted.");
             } else if (line.startsWith("MESSAGE")) {
-                messageArea.append(line.substring(8) + "\n");
+                System.out.println("Message:" + line);
             } else if (line.startsWith("START")) {
 
                 termInfo = line.split(":",20);
+                System.out.println("MixingForm: "+termInfo[1]);
                 // ミキシング箇所によってコマンド変更
                 // termInfo[] = { prefix, form, mixerIp, source...
                 switch(termInfo[1]){
-
                     // role : streamer
                     case "Local":
-
-                        ProcessBuilder pb = new ProcessBuilder("ffmpeg",
-                                "-i", "rtmp://" ,termInfo[2], "/live/mixed",
-                                "-f", "flv", "rtmp://localhost/live/watch");
-                        Process p = pb.start();
+                        System.out.println("you'll be a STREAMER");
+                        pb = new ProcessBuilder("ffmpeg",
+                                "-i", "rtmp://",termInfo[2], "/live/mixed",
+                                "-f", "flv", "rtmp://localhost/live/watch").redirectErrorStream(true);
+                        p = pb.start();
                         br = new BufferedReader(new InputStreamReader(p.getInputStream()));
                         c = new Catcher(br);
                         c.start();
@@ -94,12 +66,12 @@ public class MediaServer {
 
                     // role: Mixer
                     case "Server":
-                         System.out.println("IM MIXer");
+                         System.out.println("you'll be a Mixer");
                          pb = new ProcessBuilder("ffmpeg",
                                 "-i", "rtmp://", myLocalIp, "/live/1",
                                 "-i", "rtmp://", myLocalIp, "/live/2",
-                                "-filter_complex", "\"[0:v]pad=2*iw[a];", "[a][1:v]overlay=w\"",
-                                "-vcodec", "libx264", "-f", "flv", "rtmp://localhost/live/watch");
+                                "-filter_complex", "hstack,scale=720x640",
+                                 "-vsync","1", "-f", "flv", "-vsync", "1", "rtmp://localhost/live/watch").redirectErrorStream(true);
                         p = pb.start();
                         br = new BufferedReader(new InputStreamReader(p.getInputStream()));
                         c = new Catcher(br);
@@ -113,11 +85,11 @@ public class MediaServer {
                     case "Remote":
 
                         pb = new ProcessBuilder("ffmpeg",
-                                "-i", "rtmp://", termInfo[2], "/live/1",
-                                "-i", "rtmp://", termInfo[2], "/live/2",
+                                "-i", "rtmp://localhost/live/1",
+                                "-i", "rtmp://localhost/live/2",
                                 "-vcodec", "copy", "-acodec", "copy",
                                 "-f", "flv", "rtmp://", myLocalIp, "/live/1",
-                                "-f", "flv", "rtmp://", myLocalIp, "/live/2");
+                                "-f", "flv", "rtmp://", myLocalIp, "/live/2").redirectErrorStream(true);
                         p = pb.start();
                         BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
                         Catcher c = new Catcher(br);
@@ -131,9 +103,10 @@ public class MediaServer {
         }
     }
     public static void main(String[] args) throws Exception {
+        String cpuPerf = "20";
+        if(args.length == 1)
+            cpuPerf =args[0];
         MediaServer ms = new MediaServer();
-        ms.frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        ms.frame.setVisible(true);
-        ms.run();
+        ms.run(cpuPerf);
     }
 }

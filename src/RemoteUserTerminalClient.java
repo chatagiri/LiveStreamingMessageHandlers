@@ -3,6 +3,7 @@
  and plz type ur RTMP streaming key in build ffmpeg order.
  */
 
+import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils;
 import jdk.internal.util.xml.impl.Input;
 
 import javax.swing.*;
@@ -17,13 +18,9 @@ public class RemoteUserTerminalClient {
 
     BufferedReader in;
     PrintWriter out;
-    JFrame frame = new JFrame("Chatter");
-    JTextField textField = new JTextField(40);
-    JTextArea messageArea = new JTextArea(8, 40);
-    Runtime runtime = Runtime.getRuntime();
+    JFrame frame = new JFrame("ConnectionController");
+    JButton button = new JButton("通信開始");
 
-    int termNum = 0;
-    String order = "";
     String strServerIp = "172.16.126.95";
 
     String[] termInfo;
@@ -31,53 +28,52 @@ public class RemoteUserTerminalClient {
     // termInfo[1] = MixerTerminalIP
     // termInfo[2]-[n] = SourceTerminalIP
 
-    public RemoteUserTerminalClient() {
+    public RemoteUserTerminalClient() throws IOException {
+
+        frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        frame.setBounds(300,200,450,300);
+        button.setSize(450,300);
+
 
         // Layout GUI
-        textField.setEditable(false);
-        messageArea.setEditable(false);
-        frame.getContentPane().add(textField, "North");
-        frame.getContentPane().add(new JScrollPane(messageArea), "Center");
-        frame.pack();
+        frame.getContentPane().add(button, "Center");
 
-        // Add Listeners
-        textField.addActionListener(new ActionListener() {
+        String controllerIp = "localhost";
+        Socket socket = new Socket(controllerIp, 11111);
+        in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+        out = new PrintWriter(socket.getOutputStream(), true);
 
+        button.addActionListener(new ActionListener() {
+            @Override
             public void actionPerformed(ActionEvent e) {
-                out.println(textField.getText());
-                textField.setText("");
+                out.println("REACH");
             }
         });
     }
 
-    private void run() throws IOException, InterruptedException{
+    private void run(String cpuPerf) throws IOException, InterruptedException{
 
-        // Make connection and initialize streams
-        String myrole = "Server" ;
-        String serverAddress = "localhost";
-        Socket socket = new Socket(serverAddress, 11111);
-        //String myLocalIp = socket.getLocalAddress().toString().substring(1);
+        // get my own IPv4 address
         String myLocalIp = Inet4Address.getLocalHost().toString();
         myLocalIp = myLocalIp.substring(myLocalIp.length()-13);
-        in = new BufferedReader(new InputStreamReader(
-                socket.getInputStream()));
-        out = new PrintWriter(socket.getOutputStream(), true);
 
         // Process all messages from server, according to the protocol.
         while (true) {
             String line = in.readLine();
             System.out.println(line);
             if (line.startsWith("SUBMITNAME")) {
-                out.println("Remote:remoteuser:"+ myLocalIp + ":"+50);
+                out.println("Remote:remoteuser:"+ myLocalIp + ":"+cpuPerf);
             } else if (line.startsWith("NAMEACCEPTED")) {
-                textField.setEditable(true);
+                System.out.println("Name Accepted");
             } else if (line.startsWith("MESSAGE")) {
-                messageArea.append(line.substring(8) + "\n");
+                System.out.println("Message:" + line);
             } else if (line.startsWith("START")) {
 
+                System.out.println("Starting Connection");
                 termInfo = line.split(":",20);
                 // ミキシング箇所によってコマンド変更
                 // termInfo[] = { prefix, form, mixerIp, source...
+                System.out.println("MixingForm: "+termInfo[1]);
                 switch(termInfo[1]){
                     // role: View only
                     case "Local":
@@ -93,12 +89,16 @@ public class RemoteUserTerminalClient {
 
                     // role:Mixer
                     case "Remote":
-                        System.out.println("IM MIXer");
+                        System.out.println("you'll be a Mixer");
+                        System.out.println(strServerIp);
                         ProcessBuilder pb = new ProcessBuilder("ffmpeg",
                                 "-i", "rtmp://" ,strServerIp, "/live/1",
                                 "-i", "rtmp://" ,strServerIp, "/live/2",
-                                "-filter_complex", "\"[0:v]pad=2*iw[a];", "[a][1:v]overlay=w\"",
-                                "-vcodec", "libx264", "-f", "flv", "rtmp://localhost/live/watch");
+                                "-filter_complex", "hstack,scale=720x640",
+                                "-vsync","1", "-f", "flv", "-vsync", "1", "rtmp://localhost/live/watch").redirectErrorStream(true);
+                        System.out.println("視聴用URL : rtmp://"+ myLocalIp + "/live/watch" );
+
+                        // ffmpeg実行
                         Process p = pb.start();
                         BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
                         Catcher c = new Catcher(br);
@@ -106,16 +106,18 @@ public class RemoteUserTerminalClient {
                         p.waitFor();
                         p.destroy();
                         System.out.println(c.out.toString());
-
                         break;
                 }
             }
         }
     }
     public static void main(String[] args) throws Exception {
+        String cpuPerf = "70";
+        if(args.length == 1)
+            cpuPerf = args[0];
         RemoteUserTerminalClient client = new RemoteUserTerminalClient();
         client.frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         client.frame.setVisible(true);
-        client.run();
+        client.run(cpuPerf);
     }
 }

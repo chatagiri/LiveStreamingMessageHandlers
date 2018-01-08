@@ -103,7 +103,6 @@ public class ConnectionController {
                         makemsg();
                         System.out.println(sourceIp);
 
-
                             // start, form, mixerIP, sourceTerminals...[n]
                             String order = "START:" + form + ":" + terminals[mixernum][2] +":"+ sourceIp;
                             writer.println(order);

@@ -6,49 +6,24 @@ import java.net.Socket;
 
 public class LocalMixerTerminalClient {
 
+    String controllerIp = "172.16.126.91";
+
     BufferedReader in;
     PrintWriter out;
-    JFrame frame = new JFrame("Chatter");
-    JTextField textField = new JTextField(40);
-    JTextArea messageArea = new JTextArea(8, 40);
-    Runtime runtime = Runtime.getRuntime();
-
-    String strServerIp = "172.16.126.95";
-    String order = "";
-
     String[] termInfo;
+
     // termInfo[0] = msg prefix "START"
     // termInfo[1] = MixerTerminalIP
     // termInfo[2]-[n] = SourceTerminalIP
 
-    public LocalMixerTerminalClient() {
-
-        // Layout GUI
-        textField.setEditable(false);
-        messageArea.setEditable(false);
-        frame.getContentPane().add(textField, "North");
-        frame.getContentPane().add(new JScrollPane(messageArea), "Center");
-        frame.pack();
-
-        // Add Listeners
-        textField.addActionListener(new ActionListener() {
-
-            public void actionPerformed(ActionEvent e) {
-                out.println(textField.getText());
-                textField.setText("");
-            }
-        });
-    }
-
-    private void run() throws IOException, InterruptedException {
+    private void run(String cpuPerf) throws IOException, InterruptedException {
 
         // Make connection and initialize streams
-        String myrole = "Server" ;
-        String controllerIp = "172.16.126.91";
+
         Socket socket = new Socket(controllerIp, 11111);
         String myLocalIp = socket.getLocalAddress().toString().substring(1);
-        in = new BufferedReader(new InputStreamReader(
-                socket.getInputStream()));
+
+        in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         out = new PrintWriter(socket.getOutputStream(), true);
 
         // Process all messages from server, according to the protocol.
@@ -56,26 +31,28 @@ public class LocalMixerTerminalClient {
             String line = in.readLine();
             System.out.println(line);
             if (line.startsWith("SUBMITNAME")) {
-                out.println("Local:localMixer:"+ myLocalIp + ":"+30);
+                out.println("Local:localMixer:"+ myLocalIp + ":"+cpuPerf);
             } else if (line.startsWith("NAMEACCEPTED")) {
-                textField.setEditable(true);
+                System.out.println("Name Accepted");
             } else if (line.startsWith("MESSAGE")) {
-                messageArea.append(line.substring(8) + "\n");
+                System.out.println("MESSAGE:"+line);
             } else if (line.startsWith("START")) {
 
+                // 通信開始
+                System.out.println("Starting Connection");
                 termInfo = line.split(":",20);
-                // ミキシング箇所によってコマンド変更
+                // 送信されてくるミキサー箇所名によってコマンド変更
                 // termInfo[] = { prefix, form, mixerIp, source...
+                System.out.println("MixingForm: " +termInfo);
                 switch(termInfo[1]){
-
                     // role : Mixer
                     case "Local":
-
+                        System.out.println("you'll be a Mixer");
                         ProcessBuilder pb = new ProcessBuilder("ffmpeg",
-                                "-i", "rtmp://" ,strServerIp, "/live/1",
-                                "-i", "rtmp://" ,strServerIp, "/live/2",
-                                "-filter_complex", "\"[0:v]pad=2*iw[a];", "[a][1:v]overlay=w\"",
-                                "-vcodec", "libx264", "-f", "flv", "rtmp://localhost/live/mixed");
+                                "-i", "rtmp://localhost/live/1",
+                                "-i", "rtmp://localhost/live/2",
+                                "-filter_complex", "hstack,scale=720x640",
+                                "-vsync","1", "-f", "flv", "-vsync", "1","rtmp://localhost/live/mixed").redirectErrorStream(true);
                         Process p = pb.start();
                         BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
                         Catcher c = new Catcher(br);
@@ -83,7 +60,6 @@ public class LocalMixerTerminalClient {
                         p.waitFor();
                         p.destroy();
                         System.out.println(c.out.toString());
-
                         break;
 
                     // role: none
@@ -100,11 +76,13 @@ public class LocalMixerTerminalClient {
         }
     }
 
-
+    /* @args cpuperf*/
     public static void main(String[] args) throws Exception {
+        String cpuPerf = "30";
+        if(args.length == 1)
+            cpuPerf = args[0];
+
         LocalMixerTerminalClient client = new LocalMixerTerminalClient();
-        client.frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        client.frame.setVisible(true);
-        client.run();
+        client.run(cpuPerf);
     }
 }
