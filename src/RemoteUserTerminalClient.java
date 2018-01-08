@@ -3,15 +3,15 @@
  and plz type ur RTMP streaming key in build ffmpeg order.
  */
 
+import jdk.internal.util.xml.impl.Input;
+
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.Inet4Address;
 import java.net.Socket;
+import java.util.ArrayList;
 
 public class RemoteUserTerminalClient {
 
@@ -94,13 +94,19 @@ public class RemoteUserTerminalClient {
                     // role:Mixer
                     case "Remote":
                         System.out.println("IM MIXer");
-                        order = "ffmpeg" +
-                                " -i rtmp://" + strServerIp + "/live/1" +
-                                " -i rtmp://" + strServerIp + "/live/2" +
-                                " -filter_complex \" [0:v]pad=2*iw[a]; [a][1:v]overlay=w \" -vcodec libx264 " +
-                                " -f flv rtmp://localhost/live/watch";
-                        System.out.println("resultOrder:"+order);
-                        runtime.exec(order);
+                        ProcessBuilder pb = new ProcessBuilder("ffmpeg",
+                                "-i", "rtmp://" ,strServerIp, "/live/1",
+                                "-i", "rtmp://" ,strServerIp, "/live/2",
+                                "-filter_complex", "\"[0:v]pad=2*iw[a];", "[a][1:v]overlay=w\"",
+                                "-vcodec", "libx264", "-f", "flv", "rtmp://localhost/live/watch");
+                        Process p = pb.start();
+                        InputStream is = p.getInputStream();
+                        try {
+                            while(is.read() >= 0); //標準出力だけ読み込めばよい
+                        } finally {
+                            is.close();
+                        }
+                        System.out.println("ffmpeg closed");
                         break;
                 }
             }

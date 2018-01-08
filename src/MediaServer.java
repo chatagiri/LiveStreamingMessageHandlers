@@ -1,10 +1,7 @@
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.Socket;
@@ -17,6 +14,9 @@ public class MediaServer {
     JTextField textField = new JTextField(40);
     JTextArea messageArea = new JTextArea(8, 40);
     Runtime runtime = Runtime.getRuntime();
+    ProcessBuilder pb;
+    Process p;
+    InputStream is;
 
     int termNum = 0;
     String order = "";
@@ -77,33 +77,52 @@ public class MediaServer {
 
                     // role : streamer
                     case "Local":
-                        order = "ffmpeg -i rtmp://" + termInfo[2] + "/live/mixed -f flv -r 30 rtmp://localhost/live/watch";
-                        System.out.println("noworder" + order);
-                        runtime.exec(order);
+
+                        ProcessBuilder pb = new ProcessBuilder("ffmpeg",
+                                "-i", "rtmp://" ,termInfo[2], "/live/mixed",
+                                "-f", "flv", "rtmp://localhost/live/watch");
+                        Process p = pb.start();
+                        InputStream is = p.getInputStream();
+                        try {
+                            while(is.read() >= 0); //標準出力だけ読み込めばよい
+                        } finally {
+                            is.close();
+                        }
                         break;
 
                     // role: Mixer
                     case "Server":
-                        System.out.println("IM MIXer");
-                        // building ffmpeg order
-                        order = " -i rtmp://" + myLocalIp + "/live/1" +
-                                " -i rtmp://" + myLocalIp + "/live/2";
-                        // Mixing Process
-                        order.concat(" -filter_complex \" [0:v]pad=2*iw[a]; [a][1:v]overlay=w \" -vcodec libx264 -f flv -r 30  rtmp://localhost/live/watch" );
-                        System.out.println("resultOrder:"+order);
-                        runtime.exec(order);
+                         System.out.println("IM MIXer");
+                         pb = new ProcessBuilder("ffmpeg",
+                                "-i", "rtmp://", myLocalIp, "/live/1",
+                                "-i", "rtmp://", myLocalIp, "/live/2",
+                                "-filter_complex", "\"[0:v]pad=2*iw[a];", "[a][1:v]overlay=w\"",
+                                "-vcodec", "libx264", "-f", "flv", "rtmp://localhost/live/watch");
+                        p = pb.start();
+                        is = p.getInputStream();
+                        try {
+                            while(is.read() >= 0); //標準出力だけ読み込めばよい
+                        } finally {
+                            is.close();
+                        }
                         break;
 
                     // role: relay
                     case "Remote":
-                        order = "ffmpeg" +
-                                " -i rtmp://" + termInfo[2] + "/live/1" +
-                                " -i rtmp://" + termInfo[2] + "/live/2"+
-                                " -vcodec copy -acodec copy" +
-                                " -f flv rtmp://" + myLocalIp +"live/1" +
-                                " -f flv rtmp://" + myLocalIp +"live/2";
-                        System.out.println("resultOrder:"+order);
-                        runtime.exec(order);
+
+                        pb = new ProcessBuilder("ffmpeg",
+                                "-i", "rtmp://", termInfo[2], "/live/1",
+                                "-i", "rtmp://", termInfo[2], "/live/2",
+                                "-vcodec", "copy", "-acodec", "copy",
+                                "-f", "flv", "rtmp://", myLocalIp, "/live/1",
+                                "-f", "flv", "rtmp://", myLocalIp, "/live/2");
+                        p = pb.start();
+                        is = p.getInputStream();
+                        try {
+                            while(is.read() >= 0); //標準出力だけ読み込めばよい
+                        } finally {
+                            is.close();
+                        }
                         break;
                 }
             }

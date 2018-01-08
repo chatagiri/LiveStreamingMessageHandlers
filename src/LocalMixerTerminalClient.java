@@ -1,10 +1,7 @@
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.Socket;
 
 public class LocalMixerTerminalClient {
@@ -47,8 +44,8 @@ public class LocalMixerTerminalClient {
 
         // Make connection and initialize streams
         String myrole = "Server" ;
-        String serverAddress = "localhost";
-        Socket socket = new Socket(serverAddress, 11111);
+        String controllerIp = "172.16.126.91";
+        Socket socket = new Socket(controllerIp, 11111);
         String myLocalIp = socket.getLocalAddress().toString().substring(1);
         in = new BufferedReader(new InputStreamReader(
                 socket.getInputStream()));
@@ -73,13 +70,18 @@ public class LocalMixerTerminalClient {
 
                     // role : Mixer
                     case "Local":
-                        order = "ffmpeg" +
-                                " -i rtmp://" + myLocalIp + "/live/1" +
-                                " -i rtmp://" + myLocalIp + "/live/2" +
-                                " -filter_complex \" [0:v]pad=2*iw[a]; [a][1:v]overlay=w \" -vcodec libx264 " +
-                                " -f flv rtmp://"+ myLocalIp + "/live/mixed";
-                        System.out.println("noworder" + order);
-                        runtime.exec(order);
+                        ProcessBuilder pb = new ProcessBuilder("ffmpeg",
+                                "-i", "rtmp://" ,strServerIp, "/live/1",
+                                "-i", "rtmp://" ,strServerIp, "/live/2",
+                                "-filter_complex", "\"[0:v]pad=2*iw[a];", "[a][1:v]overlay=w\"",
+                                "-vcodec", "libx264", "-f", "flv", "rtmp://localhost/live/mixed");
+                        Process p = pb.start();
+                        InputStream is = p.getInputStream();
+                        try {
+                            while(is.read() >= 0); //標準出力だけ読み込めばよい
+                        } finally {
+                            is.close();
+                        }
                         break;
 
                     // role: none
