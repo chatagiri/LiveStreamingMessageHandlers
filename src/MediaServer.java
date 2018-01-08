@@ -50,8 +50,8 @@ public class MediaServer {
         // Make connection and initialize streams
         String myrole = "Server" ;
         // remote user terminal's ipaddr
-        String serverAddress = "localhost";
-        Socket socket = new Socket(serverAddress, 11111);
+        String controllerIp = "172.16.126.91";
+        Socket socket = new Socket(controllerIp, 11111);
         String myLocalIp = Inet4Address.getLocalHost().toString();
         myLocalIp = myLocalIp.substring(myLocalIp.length()-13);
         in = new BufferedReader(new InputStreamReader(
@@ -77,7 +77,7 @@ public class MediaServer {
 
                     // role : streamer
                     case "Local":
-                        order = "ffmpeg -i rtmp://" + termInfo[2] + "/live/1 -f flv -r 30 rtmp://localhost/live/watch";
+                        order = "ffmpeg -i rtmp://" + termInfo[2] + "/live/mixed -f flv -r 30 rtmp://localhost/live/watch";
                         System.out.println("noworder" + order);
                         runtime.exec(order);
                         break;
@@ -86,9 +86,8 @@ public class MediaServer {
                     case "Server":
                         System.out.println("IM MIXer");
                         // building ffmpeg order
-                        order = "ffmpeg" +
-                                " -i rtmp://" + termInfo[4] +
-                                " -i rtmp://" + termInfo[5] ;
+                        order = " -i rtmp://" + myLocalIp + "/live/1" +
+                                " -i rtmp://" + myLocalIp + "/live/2";
                         // Mixing Process
                         order.concat(" -filter_complex \" [0:v]pad=2*iw[a]; [a][1:v]overlay=w \" -vcodec libx264 -f flv -r 30  rtmp://localhost/live/watch" );
                         System.out.println("resultOrder:"+order);
@@ -98,11 +97,11 @@ public class MediaServer {
                     // role: relay
                     case "Remote":
                         order = "ffmpeg" +
-                                " -i rtmp://" + termInfo[4] +
-                                " -i rtmp://" + termInfo[5] +
+                                " -i rtmp://" + termInfo[2] + "/live/1" +
+                                " -i rtmp://" + termInfo[2] + "/live/2"+
                                 " -vcodec copy -acodec copy" +
-                                " -f flv rtmp://" + termInfo[2] +"live/1" +
-                                " -f flv rtmp://" + termInfo[2] +"live/2";
+                                " -f flv rtmp://" + myLocalIp +"live/1" +
+                                " -f flv rtmp://" + myLocalIp +"live/2";
                         System.out.println("resultOrder:"+order);
                         runtime.exec(order);
                         break;

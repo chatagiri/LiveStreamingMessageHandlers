@@ -59,7 +59,7 @@ public class LocalMixerTerminalClient {
             String line = in.readLine();
             System.out.println(line);
             if (line.startsWith("SUBMITNAME")) {
-                out.println("Server:strserver:"+ myLocalIp + ":"+30);
+                out.println("Local:localMixer:"+ myLocalIp + ":"+30);
             } else if (line.startsWith("NAMEACCEPTED")) {
                 textField.setEditable(true);
             } else if (line.startsWith("MESSAGE")) {
@@ -74,11 +74,10 @@ public class LocalMixerTerminalClient {
                     // role : Mixer
                     case "Local":
                         order = "ffmpeg" +
-                                " -i rtmp://" + termInfo[4] +
-                                " -i rtmp://" + termInfo[5] +
-                                " -vcodec copy -acodec copy" +
-                                " -f flv rtmp://" + strServerIp +"live/1" +
-                                " -f flv rtmp://" + strServerIp +"live/2";
+                                " -i rtmp://" + myLocalIp + "/live/1" +
+                                " -i rtmp://" + myLocalIp + "/live/2" +
+                                " -filter_complex \" [0:v]pad=2*iw[a]; [a][1:v]overlay=w \" -vcodec libx264 " +
+                                " -f flv rtmp://"+ myLocalIp + "/live/mixed";
                         System.out.println("noworder" + order);
                         runtime.exec(order);
                         break;
