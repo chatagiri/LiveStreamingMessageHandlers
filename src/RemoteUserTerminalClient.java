@@ -56,6 +56,7 @@ public class RemoteUserTerminalClient {
         // get my own IPv4 address
         String myLocalIp = Inet4Address.getLocalHost().toString();
         myLocalIp = myLocalIp.substring(myLocalIp.length()-13);
+        System.out.println(myLocalIp);
 
         // Process all messages from server, according to the protocol.
         while (true) {
@@ -91,11 +92,15 @@ public class RemoteUserTerminalClient {
                     case "Remote":
                         System.out.println("you'll be a Mixer");
                         System.out.println(strServerIp);
+                        Thread.sleep(10000);
                         ProcessBuilder pb = new ProcessBuilder("ffmpeg",
-                                "-i", "rtmp://" ,strServerIp, "/live/1",
-                                "-i", "rtmp://" ,strServerIp, "/live/2",
-                                "-filter_complex", "hstack,scale=720x640",
-                                "-vsync","1", "-f", "flv", "-vsync", "1", "rtmp://localhost/live/watch").redirectErrorStream(true);
+                                "-i", "rtmp://"+strServerIp+"/live/1",
+                                "-i", "rtmp://"+strServerIp+"/live/2",
+                                "-threads","4",
+                                "-filter_complex", "hstack,scale=1920x1080",
+                                "-vcodec", "libx264", "-max_interleave_delta", "0",
+                                "-vsync","1", "-b:v", "2000k",
+                                "-f", "flv", "-vsync", "1", "rtmp://localhost/live/watch").redirectErrorStream(true);
                         System.out.println("視聴用URL : rtmp://"+ myLocalIp + "/live/watch" );
 
                         // ffmpeg実行
