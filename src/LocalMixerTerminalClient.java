@@ -51,7 +51,7 @@ public class LocalMixerTerminalClient {
                         ProcessBuilder pb = new ProcessBuilder("ffmpeg",
                                 "-i", "rtmp://localhost/live/1",
                                 "-i", "rtmp://localhost/live/2",
-                                "-threads","4",
+                                "-threads","0",
                                 "-filter_complex", "hstack,scale=1920x1080",
                                 "-vcodec", "libx264", "-max_interleave_delta", "0",
                                 "-vsync","1", "-b:v", "2000k",
