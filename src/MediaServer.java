@@ -68,8 +68,11 @@ public class MediaServer {
                          pb = new ProcessBuilder("ffmpeg",
                                 "-i", "rtmp://"+myLocalIp+ "/live/1",
                                 "-i", "rtmp://"+myLocalIp+"/live/2",
-                                "-filter_complex", "hstack,scale=720x640",
-                                 "-vsync","1", "-f", "flv", "-vsync", "1", "rtmp://localhost/live/watch").redirectErrorStream(true);
+                                 "-threads","4",
+                                 "-filter_complex", "hstack,scale=1920x1080",
+                                 "-vcodec", "libx264", "-max_interleave_delta", "0",
+                                 "-vsync","1", "-b:v", "2000k",
+                                 "-f", "flv", "-vsync", "1", "rtmp://localhost/live/watch").redirectErrorStream(true);
                         p = pb.start();
                         br = new BufferedReader(new InputStreamReader(p.getInputStream()));
                         c = new Catcher(br);
