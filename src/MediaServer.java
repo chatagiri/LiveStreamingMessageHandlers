@@ -23,7 +23,7 @@ public class MediaServer {
     private void run(String cpuPerf) throws IOException, InterruptedException {
 
         // Make connection and initialize streams
-        String myrole = "StreamingServer" ;
+        String myrole = "StreamingServer";
         Socket socket = new Socket(controllerIp, 11111);
         String myLocalIp = getIpAddr().substring(1); //ipaddrのみ取得 0文字目： "/"
         in = new BufferedReader(new InputStreamReader(
