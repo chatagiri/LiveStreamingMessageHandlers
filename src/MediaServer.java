@@ -2,9 +2,8 @@ import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.*;
-import java.net.Inet4Address;
-import java.net.InetAddress;
-import java.net.Socket;
+import java.net.*;
+import java.util.Enumeration;
 
 public class MediaServer {
 
@@ -53,7 +52,7 @@ public class MediaServer {
                     case "Local":
                         System.out.println("you'll be a STREAMER");
                         pb = new ProcessBuilder("ffmpeg",
-                                "-i", "rtmp://" +termInfo[2]+ "/live/mixed",
+                                "-i", "rtmp://"+termInfo[2]+ "/live/mixed",
                                 "-f", "flv", "rtmp://localhost/live/watch").redirectErrorStream(true);
                         p = pb.start();
                         br = new BufferedReader(new InputStreamReader(p.getInputStream()));
@@ -69,12 +68,9 @@ public class MediaServer {
                          System.out.println("you'll be a Mixer");
                          pb = new ProcessBuilder("ffmpeg",
                                 "-i", "rtmp://"+myLocalIp+ "/live/1",
-                                "-i", "rtmp://"+myLocalIp+ "/live/2",
-                                 "-threads","4",
-                                 "-filter_complex", "hstack,scale=1920x1080",
-                                 "-vcodec", "libx264", "-max_interleave_delta", "0",
-                                 "-vsync","1", "-b:v", "2000k",
-                                 "-f", "flv", "-vsync", "1", "rtmp://localhost/live/watch").redirectErrorStream(true);
+                                "-i", "rtmp://"+myLocalIp+"/live/2",
+                                "-filter_complex", "hstack,scale=720x640",
+                                 "-vsync","1", "-f", "flv", "-vsync", "1", "rtmp://localhost/live/watch").redirectErrorStream(true);
                         p = pb.start();
                         br = new BufferedReader(new InputStreamReader(p.getInputStream()));
                         c = new Catcher(br);
@@ -91,8 +87,8 @@ public class MediaServer {
                                 "-i", "rtmp://localhost/live/1",
                                 "-i", "rtmp://localhost/live/2",
                                 "-vcodec", "copy", "-acodec", "copy",
-                                "-f", "flv", "rtmp://"+myLocalIp+"/live/1",
-                                "-f", "flv", "rtmp://"+myLocalIp+"/live/2").redirectErrorStream(true);
+                                "-f", "flv", "rtmp://", myLocalIp, "/live/1",
+                                "-f", "flv", "rtmp://", myLocalIp, "/live/2").redirectErrorStream(true);
                         p = pb.start();
                         BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
                         Catcher c = new Catcher(br);
@@ -111,5 +107,29 @@ public class MediaServer {
             cpuPerf =args[0];
         MediaServer ms = new MediaServer();
         ms.run(cpuPerf);
+    }
+
+    public String getIpAddr() throws IOException{
+        try {
+            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+            int i =0;
+            while(interfaces.hasMoreElements()){
+
+                NetworkInterface network = interfaces.nextElement();
+                Enumeration<InetAddress> addresses = network.getInetAddresses();
+                System.out.println("addr:::"+addresses.toString());
+                i++;
+                while(addresses.hasMoreElements()){
+                    InetAddress ip = addresses.nextElement();
+
+                    if(!ip.isLoopbackAddress() && ip instanceof Inet4Address){
+                        return ip.toString();
+                    }
+                }
+            }
+        } catch (SocketException e) {
+            e.printStackTrace();
+        }
+        return "null";
     }
 }
