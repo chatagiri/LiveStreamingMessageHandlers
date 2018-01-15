@@ -25,8 +25,7 @@ public class MediaServer {
         // Make connection and initialize streams
         String myrole = "StreamingServer" ;
         Socket socket = new Socket(controllerIp, 11111);
-        String myLocalIp = Inet4Address.getLocalHost().toString();
-        myLocalIp = myLocalIp.substring(myLocalIp.length()-13);
+        String myLocalIp = getIpAddr().substring(1); //ipaddrのみ取得 0文字目： "/"
         in = new BufferedReader(new InputStreamReader(
                 socket.getInputStream()));
         out = new PrintWriter(socket.getOutputStream(), true);
@@ -87,8 +86,8 @@ public class MediaServer {
                                 "-i", "rtmp://localhost/live/1",
                                 "-i", "rtmp://localhost/live/2",
                                 "-vcodec", "copy", "-acodec", "copy",
-                                "-f", "flv", "rtmp://", myLocalIp, "/live/1",
-                                "-f", "flv", "rtmp://", myLocalIp, "/live/2").redirectErrorStream(true);
+                                "-f", "flv", "rtmp://"+myLocalIp+"/live/1",
+                                "-f", "flv", "rtmp://"+myLocalIp+"/live/2").redirectErrorStream(true);
                         p = pb.start();
                         BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
                         Catcher c = new Catcher(br);
@@ -109,6 +108,7 @@ public class MediaServer {
         ms.run(cpuPerf);
     }
 
+    // IPv4アドレス取得
     public String getIpAddr() throws IOException{
         try {
             Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
@@ -117,7 +117,6 @@ public class MediaServer {
 
                 NetworkInterface network = interfaces.nextElement();
                 Enumeration<InetAddress> addresses = network.getInetAddresses();
-                System.out.println("addr:::"+addresses.toString());
                 i++;
                 while(addresses.hasMoreElements()){
                     InetAddress ip = addresses.nextElement();
