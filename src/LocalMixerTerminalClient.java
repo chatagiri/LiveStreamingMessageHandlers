@@ -2,15 +2,19 @@ import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.*;
+import java.net.ProxySelector;
 import java.net.Socket;
 
 public class LocalMixerTerminalClient {
 
-    String controllerIp =  "localhost";//"172.16.126.91";
+    String controllerIp =  "172.16.126.91";
 
     BufferedReader in;
     PrintWriter out;
     String[] termInfo;
+    boolean startedFlag  = false;
+    Catcher c; // handling standard output from FFmpeg
+    Process p; // exec FFmpeg from this impl
 
     // termInfo[0] = msg prefix:"START"
     // termInfo[1] = MixerTerminalIP
@@ -44,10 +48,15 @@ public class LocalMixerTerminalClient {
                 // 送信されてくるミキサー箇所名によってコマンド変更
                 // termInfo[] = { prefix, form, mixerIp, source...
                 System.out.println("MixingForm: " +termInfo);
+                if(startedFlag = true){
+                    p.destroy();
+                    System.out.println("flag true, Process Destroyed");
+                }
                 switch(termInfo[1]){
                     // role : Mixer
                     case "Local":
                         System.out.println("you'll be a Mixer");
+
                         ProcessBuilder pb = new ProcessBuilder("ffmpeg",
                                 "-i", "rtmp://localhost/live/1",
                                 "-i", "rtmp://localhost/live/2",
@@ -56,7 +65,8 @@ public class LocalMixerTerminalClient {
                                 "-vcodec", "libx264", "-max_interleave_delta", "0",
                                 "-vsync","1", "-b:v", "2000k",
                                 "-f", "flv", "-vsync", "1","rtmp://localhost/live/mixed").redirectErrorStream(true);
-                        Process p = pb.start();
+                        p = pb.start();
+                        startedFlag = true;
                         BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
                         Catcher c = new Catcher(br);
                         c.start();
@@ -76,7 +86,10 @@ public class LocalMixerTerminalClient {
                         break;
                 }
             }else if(line.startsWith("RESTART")){
+                // 再接続処理
                 out.println("Local:localMixer:"+ myLocalIp + ":"+cpuPerf);
+                System.out.println("Reconnected to controller.");
+                startedFlag = false;
 
             }
         }

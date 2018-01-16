@@ -1,24 +1,25 @@
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.*;
 import java.util.Enumeration;
 
 public class MediaServer {
 
+    boolean startedFlag = false;
     BufferedReader in;
     PrintWriter out;
-    ProcessBuilder pb;
-    Process p;
-    Catcher c;
-    BufferedReader br;
+    ProcessBuilder pb1, pb2;
+    Process p1 , p2;
+    Catcher c1 , c2;
+    BufferedReader br1, br2;
     String[] termInfo;
-
-    String controllerIp = "172.16.126.91";
     // termInfo[0] = msg prefix "START"
     // termInfo[1] = MixerTerminalIP
     // termInfo[2]-[n] = SourceTerminalIP
+    String controllerIp = "172.16.126.91";
 
     private void run(String cpuPerf) throws IOException, InterruptedException {
 
@@ -40,32 +41,42 @@ public class MediaServer {
                 System.out.println("Name Accepted.");
             } else if (line.startsWith("MESSAGE")) {
                 System.out.println("Message:" + line);
+            }else if(line.startsWith("RESTART")){
+                startedFlag = false;
+                out.println("Server:strserver:"+ myLocalIp + ":"+cpuPerf);
+                System.out.println("waiting for start message...");
             } else if (line.startsWith("START")) {
 
                 termInfo = line.split(":",20);
                 System.out.println("MixingForm: "+termInfo[1]);
+                if(startedFlag = true){
+                    p1.destroy();
+                    if(p2.isAlive())
+                        p2.destroy();
+                    System.out.println("flag true, destroyed Processes");
+                }
                 // ミキシング箇所によってコマンド変更
                 // termInfo[] = { prefix, form, mixerIp, source...
                 switch(termInfo[1]){
                     // role : streamer
                     case "Local":
                         System.out.println("you'll be a STREAMER");
-                        pb = new ProcessBuilder("ffmpeg",
+                        pb1 = new ProcessBuilder("ffmpeg",
                                 "-i", "rtmp://"+termInfo[2]+ "/live/mixed",
                                 "-f", "flv", "rtmp://localhost/live/watch").redirectErrorStream(true);
-                        p = pb.start();
-                        br = new BufferedReader(new InputStreamReader(p.getInputStream()));
-                        c = new Catcher(br);
-                        c.start();
-                        p.waitFor();
-                        p.destroy();
-                        System.out.println(c.out.toString());
+                        p1 = pb1.start();
+                        br1 = new BufferedReader(new InputStreamReader(p1.getInputStream()));
+                        c1 = new Catcher(br1);
+                        c1.start();
+                        p1.waitFor();
+                        p1.destroy();
+                        System.out.println(c1.out.toString());
                         break;
 
                     // role: Mixer
                     case "Server":
                          System.out.println("you'll be a Mixer");
-                         pb = new ProcessBuilder("ffmpeg",
+                         pb1 = new ProcessBuilder("ffmpeg",
                                 "-i", "rtmp://"+myLocalIp+ "/live/1",
                                 "-i", "rtmp://"+myLocalIp+"/live/2",
                                  "-threads","0",
@@ -73,31 +84,41 @@ public class MediaServer {
                                  "-vcodec", "libx264", "-max_interleave_delta", "0",
                                  "-vsync","1", "-b:v", "2000k",
                                  "-f", "flv", "-vsync", "1", "rtmp://localhost/live/watch").redirectErrorStream(true);
-                        p = pb.start();
-                        br = new BufferedReader(new InputStreamReader(p.getInputStream()));
-                        c = new Catcher(br);
-                        c.start();
-                        p.waitFor();
-                        p.destroy();
-                        System.out.println(c.out.toString());
+                        p1 = pb1.start();
+                        br1 = new BufferedReader(new InputStreamReader(p1.getInputStream()));
+                        c1 = new Catcher(br1);
+                        c1.start();
+                        p1.waitFor();
+                        p1.destroy();
+                        System.out.println(c1.out.toString());
                         break;
 
                     // role: relay
                     case "Remote":
 
-                        pb = new ProcessBuilder("ffmpeg",
+                        pb1 = new ProcessBuilder("ffmpeg",
                                 "-i", "rtmp://localhost/live/1",
-                                "-i", "rtmp://localhost/live/2",
                                 "-vcodec", "copy", "-acodec", "copy",
-                                "-f", "flv", "rtmp://"+termInfo[2]+"/live/1",
-                                "-f", "flv", "rtmp://"+termInfo[2]+"/live/2").redirectErrorStream(true);
-                        p = pb.start();
-                        BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
-                        Catcher c = new Catcher(br);
-                        c.start();
-                        p.waitFor();
-                        p.destroy();
-                        System.out.println(c.out.toString());
+                                "-f", "flv", "rtmp://"+termInfo[2]+"/live/1").redirectErrorStream(true);
+
+                        pb2 = new ProcessBuilder("ffmpeg",
+                            "-i", "rtmp://localhost/live/2",
+                            "-vcodec", "copy", "-acodec", "copy",
+                            "-f", "flv", "rtmp://"+termInfo[2]+"/live/2").redirectErrorStream(true);
+                        p1 = pb1.start();
+                        p2 = pb2.start();
+                        BufferedReader br1 = new BufferedReader(new InputStreamReader(p1.getInputStream()));
+                        BufferedReader br2 = new BufferedReader(new InputStreamReader(p2.getInputStream()));
+                        Catcher c1 = new Catcher(br1);
+                        Catcher c2 = new Catcher(br2);
+                        c1.start();
+                        c2.start();
+                        p1.waitFor();
+                        p2.waitFor();
+                        p1.destroy();
+                        p2.destroy();
+                        System.out.println(c1.out.toString());
+                        System.out.println(c2.out.toString());
                         break;
                 }
             }

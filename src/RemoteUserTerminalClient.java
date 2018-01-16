@@ -18,9 +18,9 @@ public class RemoteUserTerminalClient {
 
     BufferedReader in;
     PrintWriter out;
-
     String strServerIp = "172.16.126.95";
-
+    Process p; // exec FFmpeg from this impl
+    boolean startedFlag = false;
     String[] termInfo;
     // termInfo[0] = msg prefix "START"
     // termInfo[1] = MixerTerminalIP
@@ -61,6 +61,10 @@ public class RemoteUserTerminalClient {
                 // ミキシング箇所によってコマンド変更
                 // termInfo[] = { prefix, form, mixerIp, source...
                 System.out.println("MixingForm: "+termInfo[1]);
+                if(startedFlag = true){
+                    p.destroy();
+                    System.out.println("flag true, Process Destroyed");
+                }
                 switch(termInfo[1]){
                     // role: View only
                     case "Local":
@@ -90,7 +94,8 @@ public class RemoteUserTerminalClient {
                         System.out.println("視聴用URL : rtmp://"+ myLocalIp + "/live/watch" );
 
                         // ffmpeg実行
-                        Process p = pb.start();
+                        p = pb.start();
+                        startedFlag = true;
                         BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
                         Catcher c = new Catcher(br);
                         c.start();
@@ -99,6 +104,10 @@ public class RemoteUserTerminalClient {
                         System.out.println(c.out.toString());
                         break;
                 }
+            }else if(line.startsWith("RESTART")){
+                out.println("Remote:remoteuser:"+ myLocalIp + ":"+cpuPerf);
+                System.out.println("Reconnected to controller.");
+                startedFlag = false;
             }
         }
     }

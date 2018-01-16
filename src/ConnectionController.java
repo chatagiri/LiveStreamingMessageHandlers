@@ -126,18 +126,18 @@ public class ConnectionController {
                 out.println("NAMEACCEPTED");
                 writers.add(out);
 
-                /*** 端末リスト生成 ***/
-                // split joining message,
-                System.out.println("inputee"+name);
-                terminals[num] = name.split(":",5);
-                System.out.println("term" + terminals[num][0]);
-                // add terminals
-                num++;
-                System.out.println(num);
-                // wait Msg input break
 
-                // メッセージ送信
+
+                // メッセージ受信
                 while (true) {
+                    /*** 端末リスト生成 ***/
+                    // split joining message,
+                    System.out.println("inputee"+name);
+                    terminals[num] = name.split(":",5);
+                    System.out.println("term" + terminals[num][0]);
+                    // add terminals
+                    num++;
+                    System.out.println(num);
                     String input = in.readLine();
                     if (input == null) {
                         return;
@@ -180,6 +180,8 @@ public class ConnectionController {
             terminals = new String[20][5];
             num = 0;
             order = "RESTART";
+            System.out.println("接続待機に移行します");
+            startedFlag = false;
         }
 
         System.out.println("Order = " + order);
