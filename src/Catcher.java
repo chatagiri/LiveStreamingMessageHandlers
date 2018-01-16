@@ -4,6 +4,7 @@ import java.io.StringWriter;
 
 /**
  * Created by chata on 2018/01/08.
+ * Handling standard output messages from process result
  */
 public class Catcher extends Thread{
     Reader in;

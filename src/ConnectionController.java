@@ -28,10 +28,10 @@ public class ConnectionController {
     private static int remotecpuPerf = 0;
     private static int servercpuPerf = 0;
     private static String form;
-    private static String servIp = "172.16.126.95";
     private static int sourceTerminal = 0;
     private static ArrayList<String> formList = new ArrayList<String>();
-    static int nwWidth = 800;
+    private static boolean startedFlag = false;
+    static int nwWidth ;
 
     private static JFrame frame = new JFrame("ConnectionController");
     private static JButton button = new JButton("通信開始");
@@ -59,6 +59,7 @@ public class ConnectionController {
         frame.getContentPane().add(p1);
         frame.getContentPane().add(p2,"South");
 
+        // ボタン降下で接続開始
         button.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -119,44 +120,27 @@ public class ConnectionController {
                     if (name == null) {
                         return;
                     }
-
-                    /*** 端末リスト生成 ***/
-                    // split joining message,
-                    System.out.println(name);
-                    terminals[num] = name.split(":",5);
-                    System.out.println("term" + terminals[num][0]);
-                    // add terminals
-                    num++;
-                    System.out.println(num);
-                    // wait Msg input break
                     break;
                 }
 
                 out.println("NAMEACCEPTED");
                 writers.add(out);
 
+                /*** 端末リスト生成 ***/
+                // split joining message,
+                System.out.println("inputee"+name);
+                terminals[num] = name.split(":",5);
+                System.out.println("term" + terminals[num][0]);
+                // add terminals
+                num++;
+                System.out.println(num);
+                // wait Msg input break
+
                 // メッセージ送信
                 while (true) {
                     String input = in.readLine();
                     if (input == null) {
                         return;
-                    }
-
-                    // 所謂開始のきっかけ"REACH"
-                    if(button.getModel().isPressed()) {
-                        nwWidth = Integer.parseInt(nwField.getText());
-                        makemsg();
-                        System.out.println(sourceIp);
-
-                        // start, form, mixerIP, sourceTerminals...[n]
-                        String order = "START:" + form + ":" + terminals[mixernum][2] + ":" + sourceIp;
-                        System.out.println("Order = " + order);
-
-                        for (PrintWriter writer : writers) {
-
-
-                            writer.println(order);
-                        }
                     }
                 }
             } catch (IOException e) {
@@ -181,14 +165,24 @@ public class ConnectionController {
 
     // 接続開始
     public void connectStart() {
+        String order = "";
         nwWidth = Integer.parseInt(nwField.getText());
         makemsg();
         System.out.println(sourceIp);
 
         // start, form, mixerIP, sourceTerminals...[n]
-        String order = "START:" + form + ":" + terminals[mixernum][2] + ":" + sourceIp;
-        System.out.println("Order = " + order);
+        if(!startedFlag == true) {
+            order = "START:" + form + ":" + terminals[mixernum][2] + ":" + sourceIp;
+            startedFlag = true;
+        }
+        else{
+            // 再構成
+            terminals = new String[20][5];
+            num = 0;
+            order = "RESTART";
+        }
 
+        System.out.println("Order = " + order);
         for (PrintWriter writer : writers) {
             writer.println(order);
         }

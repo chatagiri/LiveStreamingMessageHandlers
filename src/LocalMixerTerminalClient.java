@@ -6,7 +6,7 @@ import java.net.Socket;
 
 public class LocalMixerTerminalClient {
 
-    String controllerIp = "172.16.126.91";
+    String controllerIp =  "localhost";//"172.16.126.91";
 
     BufferedReader in;
     PrintWriter out;
@@ -75,6 +75,9 @@ public class LocalMixerTerminalClient {
                         System.out.println("U have no role!");
                         break;
                 }
+            }else if(line.startsWith("RESTART")){
+                out.println("Local:localMixer:"+ myLocalIp + ":"+cpuPerf);
+
             }
         }
     }
