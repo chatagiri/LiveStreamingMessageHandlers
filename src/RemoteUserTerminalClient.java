@@ -18,8 +18,6 @@ public class RemoteUserTerminalClient {
 
     BufferedReader in;
     PrintWriter out;
-    JFrame frame = new JFrame("ConnectionController");
-    JButton button = new JButton("通信開始");
 
     String strServerIp = "172.16.126.95";
 
@@ -30,25 +28,13 @@ public class RemoteUserTerminalClient {
 
     public RemoteUserTerminalClient() throws IOException {
 
-        frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-        frame.setBounds(300,200,450,300);
-        button.setSize(450,300);
-
 
         // Layout GUI
-        frame.getContentPane().add(button, "Center");
-
         String controllerIp = "localhost";
         Socket socket = new Socket(controllerIp, 11111);
         in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         out = new PrintWriter(socket.getOutputStream(), true);
 
-        button.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                out.println("REACH");
-            }
-        });
     }
 
     private void run(String cpuPerf) throws IOException, InterruptedException{
@@ -94,8 +80,8 @@ public class RemoteUserTerminalClient {
                         System.out.println(strServerIp);
                         Thread.sleep(10000);
                         ProcessBuilder pb = new ProcessBuilder("ffmpeg",
-                                "-i", "rtmp://"+strServerIp+"/live/1",
-                                "-i", "rtmp://"+strServerIp+"/live/2",
+                                "-i", "rtmp://localhost/live/1",
+                                "-i", "rtmp://localhost/live/2",
                                 "-threads","0",
                                 "-filter_complex", "hstack,scale=1920x1080",
                                 "-vcodec", "libx264", "-max_interleave_delta", "0",
@@ -121,8 +107,6 @@ public class RemoteUserTerminalClient {
         if(args.length == 1)
             cpuPerf = args[0];
         RemoteUserTerminalClient client = new RemoteUserTerminalClient();
-        client.frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        client.frame.setVisible(true);
         client.run(cpuPerf);
     }
 }

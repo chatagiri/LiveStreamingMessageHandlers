@@ -1,3 +1,6 @@
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -11,6 +14,7 @@ import java.util.HashSet;
 import com.sun.management.OperatingSystemMXBean;
 
 import javax.management.MXBean;
+import javax.swing.*;
 
 public class ConnectionController {
 
@@ -27,7 +31,41 @@ public class ConnectionController {
     private static String servIp = "172.16.126.95";
     private static int sourceTerminal = 0;
     private static ArrayList<String> formList = new ArrayList<String>();
-    static int nwWidth = 1500;
+    static int nwWidth = 800;
+
+    private static JFrame frame = new JFrame("ConnectionController");
+    private static JButton button = new JButton("通信開始");
+    JLabel label = new JLabel("現地可用NW帯域");
+    private static JTextField nwField = new JTextField("1500");
+
+    public ConnectionController() {
+        JPanel p1 = new JPanel();
+        p1.setLayout(null);
+        JPanel p2 = new JPanel();
+        p2.setLayout(new FlowLayout(FlowLayout.LEFT));
+
+        frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        frame.setBounds(300, 200, 450, 300);
+        button.setSize(450, 250);
+        label.setSize(225,50);
+        nwField.setSize(225,50);
+
+        // Layout GUI
+        p1.setSize(450,250);
+        p1.add(button,"Center");
+        p2.setSize(450,50);
+        p2.add(label);
+        p2.add(nwField);
+        frame.getContentPane().add(p1);
+        frame.getContentPane().add(p2,"South");
+
+        button.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                connectStart();
+            }
+        });
+    }
 
     static String[][] terminals = new String[20][5];
     // [n][0]: a kind of terminal{source,mixer,loMixer}
@@ -38,10 +76,15 @@ public class ConnectionController {
     private static HashSet<PrintWriter> writers = new HashSet<PrintWriter>();
     public static void main(String[] args) throws Exception {
 
-        if(args.length == 1){
-            nwWidth = Integer.parseInt(args[0]);
-        }
+        ConnectionController cc = new ConnectionController();
+        cc.frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        cc.frame.setVisible(true);
+        cc.run();
 
+
+    }
+
+    void run()throws Exception{
         System.out.println("Connection Controller booted. listening on :" + PORT);
         ServerSocket listener = new ServerSocket(PORT);
         try {
@@ -66,11 +109,10 @@ public class ConnectionController {
         public void run() {
 
             try {
-                in = new BufferedReader(new InputStreamReader(
-                        socket.getInputStream()));
+                in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 out = new PrintWriter(socket.getOutputStream(), true);
 
-                // waiting for any message
+                // 端末接続待機
                 while (true) {
                     out.println("SUBMITNAME");
                     name = in.readLine();
@@ -100,8 +142,9 @@ public class ConnectionController {
                         return;
                     }
 
-                    if(input.equals("REACH")) {
-
+                    // 所謂開始のきっかけ"REACH"
+                    if(button.getModel().isPressed()) {
+                        nwWidth = Integer.parseInt(nwField.getText());
                         makemsg();
                         System.out.println(sourceIp);
 
@@ -110,15 +153,12 @@ public class ConnectionController {
                         System.out.println("Order = " + order);
 
                         for (PrintWriter writer : writers) {
-                            // 所謂開始のきっかけ"REACH"
+
 
                             writer.println(order);
                         }
-                    }else{
-                           // writer.println("MESSAGE " + name + ": " + input);
-                           // System.out.println(input);
-                        }
                     }
+                }
             } catch (IOException e) {
                 System.out.println(e);
             } finally {
@@ -136,6 +176,21 @@ public class ConnectionController {
                 } catch (IOException e) {
                 }
             }
+        }
+    }
+
+    // 接続開始
+    public void connectStart() {
+        nwWidth = Integer.parseInt(nwField.getText());
+        makemsg();
+        System.out.println(sourceIp);
+
+        // start, form, mixerIP, sourceTerminals...[n]
+        String order = "START:" + form + ":" + terminals[mixernum][2] + ":" + sourceIp;
+        System.out.println("Order = " + order);
+
+        for (PrintWriter writer : writers) {
+            writer.println(order);
         }
     }
 
