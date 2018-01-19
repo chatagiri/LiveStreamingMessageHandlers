@@ -9,6 +9,7 @@ import java.util.Enumeration;
 public class MediaServer {
 
     boolean startedFlag = false;
+    boolean relayFlag = false;
     BufferedReader in;
     PrintWriter out;
     ProcessBuilder pb1, pb2;
@@ -23,10 +24,14 @@ public class MediaServer {
 
     private void run(String cpuPerf) throws IOException, InterruptedException {
 
+        processThread pt1 = null;
+        processThread pt2 = null;
+
         // Make connection and initialize streams
         String myrole = "StreamingServer";
         Socket socket = new Socket(controllerIp, 11111);
-        String myLocalIp = getIpAddr().substring(1); //ipaddrのみ取得 0文字目： "/"
+        String myLocalIp = IpAddrConf.getIpAddr(); //ipaddrのみ取得 0文字目： "/
+        System.out.println(myLocalIp);
         in = new BufferedReader(new InputStreamReader(
                 socket.getInputStream()));
         out = new PrintWriter(socket.getOutputStream(), true);
@@ -42,19 +47,24 @@ public class MediaServer {
             } else if (line.startsWith("MESSAGE")) {
                 System.out.println("Message:" + line);
             }else if(line.startsWith("RESTART")){
-                startedFlag = false;
-                out.println("Server:strserver:"+ myLocalIp + ":"+cpuPerf);
-                System.out.println("waiting for start message...");
+                if(startedFlag == true){
+                    if(relayFlag == true){
+                        pt1.interrupt();
+                        pt2.interrupt();
+                        relayFlag = false;
+                    }
+                    else{
+                        pt1.interrupt();
+                    }
+                    startedFlag = false;
+                    out.println("Server:strserver:"+ myLocalIp + ":"+cpuPerf);
+                    System.out.println("waiting for start message...");
+                }
+
             } else if (line.startsWith("START")) {
 
                 termInfo = line.split(":",20);
                 System.out.println("MixingForm: "+termInfo[1]);
-                if(startedFlag = true){
-                    p1.destroy();
-                    if(p2.isAlive())
-                        p2.destroy();
-                    System.out.println("flag true, destroyed Processes");
-                }
                 // ミキシング箇所によってコマンド変更
                 // termInfo[] = { prefix, form, mixerIp, source...
                 switch(termInfo[1]){
@@ -64,13 +74,7 @@ public class MediaServer {
                         pb1 = new ProcessBuilder("ffmpeg",
                                 "-i", "rtmp://"+termInfo[2]+ "/live/mixed",
                                 "-f", "flv", "rtmp://localhost/live/watch").redirectErrorStream(true);
-                        p1 = pb1.start();
-                        br1 = new BufferedReader(new InputStreamReader(p1.getInputStream()));
-                        c1 = new Catcher(br1);
-                        c1.start();
-                        p1.waitFor();
-                        p1.destroy();
-                        System.out.println(c1.out.toString());
+                        pt1 = new processThread(pb1);
                         break;
 
                     // role: Mixer
@@ -84,13 +88,7 @@ public class MediaServer {
                                  "-vcodec", "libx264", "-max_interleave_delta", "0",
                                  "-vsync","1", "-b:v", "2000k",
                                  "-f", "flv", "-vsync", "1", "rtmp://localhost/live/watch").redirectErrorStream(true);
-                        p1 = pb1.start();
-                        br1 = new BufferedReader(new InputStreamReader(p1.getInputStream()));
-                        c1 = new Catcher(br1);
-                        c1.start();
-                        p1.waitFor();
-                        p1.destroy();
-                        System.out.println(c1.out.toString());
+                        pt1 = new processThread(pb1);
                         break;
 
                     // role: relay
@@ -105,21 +103,11 @@ public class MediaServer {
                             "-i", "rtmp://localhost/live/2",
                             "-vcodec", "copy", "-acodec", "copy",
                             "-f", "flv", "rtmp://"+termInfo[2]+"/live/2").redirectErrorStream(true);
-                        p1 = pb1.start();
-                        p2 = pb2.start();
-                        BufferedReader br1 = new BufferedReader(new InputStreamReader(p1.getInputStream()));
-                        BufferedReader br2 = new BufferedReader(new InputStreamReader(p2.getInputStream()));
-                        Catcher c1 = new Catcher(br1);
-                        Catcher c2 = new Catcher(br2);
-                        c1.start();
-                        c2.start();
-                        p1.waitFor();
-                        p2.waitFor();
-                        p1.destroy();
-                        p2.destroy();
-                        System.out.println(c1.out.toString());
-                        System.out.println(c2.out.toString());
-                        break;
+
+                        pt1 = new processThread(pb1);
+                        pt2 = new processThread(pb2);
+                        relayFlag = true;
+
                 }
             }
         }
@@ -132,27 +120,32 @@ public class MediaServer {
         ms.run(cpuPerf);
     }
 
-    // IPv4アドレス取得
-    public String getIpAddr() throws IOException{
-        try {
-            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
-            int i =0;
-            while(interfaces.hasMoreElements()){
+    class processThread extends Thread {
+        private ProcessBuilder pb;
+        private volatile boolean done = false;
 
-                NetworkInterface network = interfaces.nextElement();
-                Enumeration<InetAddress> addresses = network.getInetAddresses();
-                i++;
-                while(addresses.hasMoreElements()){
-                    InetAddress ip = addresses.nextElement();
-
-                    if(!ip.isLoopbackAddress() && ip instanceof Inet4Address){
-                        return ip.toString();
-                    }
-                }
-            }
-        } catch (SocketException e) {
-            e.printStackTrace();
+        public processThread(ProcessBuilder pb) {
+            this.pb = pb;
         }
-        return "null";
+
+        public void run() {
+            BufferedReader br;
+            Catcher c = null;
+            Process p = null;
+            try {
+                p = pb.start();
+                startedFlag = true;
+                br = new BufferedReader(new InputStreamReader(p.getInputStream()));
+                c = new Catcher(br);
+                c.start();
+                p.waitFor();
+                p.destroy();
+                System.out.println(c.out.toString());
+            } catch (Exception e) {
+                System.out.println("interrupt");
+                c.stop();
+                p.destroy();
+            }
+        }
     }
 }

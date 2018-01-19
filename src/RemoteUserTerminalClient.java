@@ -12,6 +12,7 @@ import java.awt.event.ActionListener;
 import java.io.*;
 import java.net.Inet4Address;
 import java.net.Socket;
+import java.nio.Buffer;
 import java.util.ArrayList;
 
 public class RemoteUserTerminalClient {
@@ -20,29 +21,26 @@ public class RemoteUserTerminalClient {
     PrintWriter out;
     String strServerIp = "172.16.126.95";
     Process p; // exec FFmpeg from this impl
-    boolean startedFlag = false;
+    static boolean startedFlag = false;
     String[] termInfo;
     // termInfo[0] = msg prefix "START"
     // termInfo[1] = MixerTerminalIP
     // termInfo[2]-[n] = SourceTerminalIP
 
     public RemoteUserTerminalClient() throws IOException {
-
-
         // Layout GUI
         String controllerIp = "localhost";
         Socket socket = new Socket(controllerIp, 11111);
         in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         out = new PrintWriter(socket.getOutputStream(), true);
-
     }
 
     private void run(String cpuPerf) throws IOException, InterruptedException{
 
         // get my own IPv4 address
-        String myLocalIp = Inet4Address.getLocalHost().toString();
-        myLocalIp = myLocalIp.substring(myLocalIp.length()-13);
+        String myLocalIp = IpAddrConf.getIpAddr();
         System.out.println(myLocalIp);
+        processThread pt = null;
 
         // Process all messages from server, according to the protocol.
         while (true) {
@@ -61,10 +59,7 @@ public class RemoteUserTerminalClient {
                 // ミキシング箇所によってコマンド変更
                 // termInfo[] = { prefix, form, mixerIp, source...
                 System.out.println("MixingForm: "+termInfo[1]);
-                if(startedFlag = true){
-                    p.destroy();
-                    System.out.println("flag true, Process Destroyed");
-                }
+
                 switch(termInfo[1]){
                     // role: View only
                     case "Local":
@@ -82,7 +77,7 @@ public class RemoteUserTerminalClient {
                     case "Remote":
                         System.out.println("you'll be a Mixer");
                         System.out.println(strServerIp);
-                        Thread.sleep(10000);
+                       // Thread.sleep(10000);
                         ProcessBuilder pb = new ProcessBuilder("ffmpeg",
                                 "-i", "rtmp://localhost/live/1",
                                 "-i", "rtmp://localhost/live/2",
@@ -91,23 +86,19 @@ public class RemoteUserTerminalClient {
                                 "-vcodec", "libx264", "-max_interleave_delta", "0",
                                 "-vsync","1", "-b:v", "2000k",
                                 "-f", "flv", "-vsync", "1", "rtmp://localhost/live/watch").redirectErrorStream(true);
+                        pt = new processThread(pb);
                         System.out.println("視聴用URL : rtmp://"+ myLocalIp + "/live/watch" );
-
                         // ffmpeg実行
-                        p = pb.start();
-                        startedFlag = true;
-                        BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
-                        Catcher c = new Catcher(br);
-                        c.start();
-                        p.waitFor();
-                        p.destroy();
-                        System.out.println(c.out.toString());
                         break;
                 }
             }else if(line.startsWith("RESTART")){
-                out.println("Remote:remoteuser:"+ myLocalIp + ":"+cpuPerf);
-                System.out.println("Reconnected to controller.");
+                if(startedFlag == true){
+                    pt.interrupt();
+                }
+                    out.println("Remote:remoteuser:"+ myLocalIp + ":"+cpuPerf);
+                    System.out.println("Reconnected to controller.");
                 startedFlag = false;
+
             }
         }
     }
@@ -118,4 +109,33 @@ public class RemoteUserTerminalClient {
         RemoteUserTerminalClient client = new RemoteUserTerminalClient();
         client.run(cpuPerf);
     }
+
+    class processThread extends Thread{
+        private ProcessBuilder pb;
+        private volatile boolean done = false;
+        public processThread(ProcessBuilder pb){
+            this.pb = pb;
+        }
+
+        public void run(){
+            BufferedReader br;
+            Catcher c = null;
+            try {
+                Process p = pb.start();
+                startedFlag = true;
+                br = new BufferedReader(new InputStreamReader(p.getInputStream()));
+                c = new Catcher(br);
+                c.start();
+                p.waitFor();
+                p.destroy();
+                System.out.println(c.out.toString());
+            } catch (Exception e) {
+                System.out.println("interrupt");
+                c.stop();
+                p.destroy();
+            }
+        }
+    }
 }
+
+

@@ -30,6 +30,8 @@ public class LocalMixerTerminalClient {
         in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         out = new PrintWriter(socket.getOutputStream(), true);
 
+        processThread pt = null;
+
         // Process all messages from server, according to the protocol.
         while (true) {
             String line = in.readLine();
@@ -65,14 +67,7 @@ public class LocalMixerTerminalClient {
                                 "-vcodec", "libx264", "-max_interleave_delta", "0",
                                 "-vsync","1", "-b:v", "2000k",
                                 "-f", "flv", "-vsync", "1","rtmp://localhost/live/mixed").redirectErrorStream(true);
-                        p = pb.start();
-                        startedFlag = true;
-                        BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
-                        Catcher c = new Catcher(br);
-                        c.start();
-                        p.waitFor();
-                        p.destroy();
-                        System.out.println(c.out.toString());
+                        pt = new processThread(pb);
                         break;
 
                     // role: none
@@ -87,6 +82,9 @@ public class LocalMixerTerminalClient {
                 }
             }else if(line.startsWith("RESTART")){
                 // 再接続処理
+                if(startedFlag == true){
+                    pt.interrupt();
+                }
                 out.println("Local:localMixer:"+ myLocalIp + ":"+cpuPerf);
                 System.out.println("Reconnected to controller.");
                 startedFlag = false;
@@ -103,5 +101,32 @@ public class LocalMixerTerminalClient {
 
         LocalMixerTerminalClient client = new LocalMixerTerminalClient();
         client.run(cpuPerf);
+    }
+
+    class processThread extends Thread{
+        private ProcessBuilder pb;
+        private volatile boolean done = false;
+        public processThread(ProcessBuilder pb){
+            this.pb = pb;
+        }
+
+        public void run(){
+            BufferedReader br;
+            Catcher c = null;
+            try {
+                Process p = pb.start();
+                startedFlag = true;
+                br = new BufferedReader(new InputStreamReader(p.getInputStream()));
+                c = new Catcher(br);
+                c.start();
+                p.waitFor();
+                p.destroy();
+                System.out.println(c.out.toString());
+            } catch (Exception e) {
+                System.out.println("interrupt");
+                c.stop();
+                p.destroy();
+            }
+        }
     }
 }

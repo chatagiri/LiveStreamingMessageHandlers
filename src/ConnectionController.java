@@ -19,7 +19,8 @@ import javax.swing.*;
 public class ConnectionController {
 
     private static final int PORT = 11111;
-    private static String sourceIp = "SourceIPs";
+     private static String sourceIp = "SourceIPs";
+   // private static String sourceIp = "SourceIps:172.16.126.93:172.16.126.86";
 
     // number of terminals
     private static int num = 0;
@@ -31,11 +32,14 @@ public class ConnectionController {
     private static int sourceTerminal = 0;
     private static ArrayList<String> formList = new ArrayList<String>();
     private static boolean startedFlag = false;
+    private boolean lmFlag = false;
     static int nwWidth ;
 
-    private static JFrame frame = new JFrame("ConnectionController");
-    private static JButton button = new JButton("通信開始");
-    JLabel label = new JLabel("現地可用NW帯域");
+    private JFrame frame = new JFrame("ConnectionController");
+    private JButton button = new JButton("通信開始");
+    private static JCheckBox lmBox = new JCheckBox("LocalMixerを使用する");
+    private JLabel label = new JLabel("現地可用NW帯域:");
+    private JLabel spacer = new JLabel("KB  ");
     private static JTextField nwField = new JTextField("1500");
 
     public ConnectionController() {
@@ -45,9 +49,16 @@ public class ConnectionController {
         p2.setLayout(new FlowLayout(FlowLayout.LEFT));
 
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-        frame.setBounds(300, 200, 450, 300);
+        frame.setBounds(900, 200, 450, 300);
+        frame.setAlwaysOnTop(true);
         button.setSize(450, 250);
+        button.setBackground(Color.decode("#87CEFA"));
+        button.setFont(new Font("メイリオ",Font.PLAIN,32));
         label.setSize(225,50);
+        label.setFont(new Font("メイリオ",Font.PLAIN,12));
+        spacer.setFont(new Font("メイリオ",Font.PLAIN,12));
+        lmBox.setSize(225,50);
+        lmBox.setFont(new Font("メイリオ",Font.PLAIN,12));
         nwField.setSize(225,50);
 
         // Layout GUI
@@ -56,6 +67,8 @@ public class ConnectionController {
         p2.setSize(450,50);
         p2.add(label);
         p2.add(nwField);
+        p2.add(spacer);
+        p2.add(lmBox);
         frame.getContentPane().add(p1);
         frame.getContentPane().add(p2,"South");
 
@@ -64,6 +77,14 @@ public class ConnectionController {
             @Override
             public void actionPerformed(ActionEvent e) {
                 connectStart();
+                if(startedFlag == true) {
+                    button.setBackground(Color.decode("#FFC0CB"));
+                    button.setText("通信中");
+                }
+                else{
+                    button.setBackground(Color.decode("#87CEFA"));
+                    button.setText("通信開始");
+                }
             }
         });
     }
@@ -81,8 +102,6 @@ public class ConnectionController {
         cc.frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         cc.frame.setVisible(true);
         cc.run();
-
-
     }
 
     void run()throws Exception{
@@ -108,7 +127,6 @@ public class ConnectionController {
         }
 
         public void run() {
-
             try {
                 in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 out = new PrintWriter(socket.getOutputStream(), true);
@@ -122,11 +140,8 @@ public class ConnectionController {
                     }
                     break;
                 }
-
                 out.println("NAMEACCEPTED");
                 writers.add(out);
-
-
 
                 // メッセージ受信
                 while (true) {
@@ -190,7 +205,6 @@ public class ConnectionController {
         }
     }
 
-
     // ミキシング箇所制定
     public static void makemsg(){
         boolean localflag = false;
@@ -205,9 +219,11 @@ public class ConnectionController {
 
             switch (terminals[i][0]) {
                 case "Local":
-                    localNum = i;
-                    localflag = true;
-                    localcpuPerf = Integer.parseInt(terminals[i][3]);
+                    if(lmBox.isSelected()) {
+                        localNum = i;
+                        localflag = true;
+                        localcpuPerf = Integer.parseInt(terminals[i][3]);
+                    }
                     break;
                 case "Server":
                     serverNum = i;
