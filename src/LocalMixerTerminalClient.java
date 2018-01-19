@@ -50,10 +50,7 @@ public class LocalMixerTerminalClient {
                 // 送信されてくるミキサー箇所名によってコマンド変更
                 // termInfo[] = { prefix, form, mixerIp, source...
                 System.out.println("MixingForm: " +termInfo);
-                if(startedFlag = true){
-                    p.destroy();
-                    System.out.println("flag true, Process Destroyed");
-                }
+
                 switch(termInfo[1]){
                     // role : Mixer
                     case "Local":
@@ -84,6 +81,7 @@ public class LocalMixerTerminalClient {
                 // 再接続処理
                 if(startedFlag == true){
                     pt.interrupt();
+
                 }
                 out.println("Local:localMixer:"+ myLocalIp + ":"+cpuPerf);
                 System.out.println("Reconnected to controller.");

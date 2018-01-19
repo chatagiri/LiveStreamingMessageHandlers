@@ -20,7 +20,7 @@ import java.util.Enumeration;
                     InetAddress ip = addresses.nextElement();
 
                     if (!ip.isLoopbackAddress() && ip instanceof Inet4Address) {
-                        return ip.toString();
+                        return ip.toString().replace("/","");
                     }
                 }
             }
