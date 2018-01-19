@@ -53,6 +53,7 @@ public class RemoteUserTerminalClient {
             } else if (line.startsWith("MESSAGE")) {
                 System.out.println("Message:" + line);
             } else if (line.startsWith("START")) {
+                startedFlag = true;
 
                 System.out.println("Starting Connection");
                 termInfo = line.split(":",20);
@@ -96,8 +97,8 @@ public class RemoteUserTerminalClient {
                 if(startedFlag == true){
                     pt.interrupt();
                 }
-                    out.println("Remote:remoteuser:"+ myLocalIp + ":"+cpuPerf);
-                    System.out.println("Reconnected to controller.");
+                out.println("Remote:remoteuser:"+ myLocalIp + ":"+cpuPerf);
+                System.out.println("Reconnected to controller.");
                 startedFlag = false;
 
             }
@@ -123,7 +124,6 @@ public class RemoteUserTerminalClient {
             Catcher c = null;
             try {
                 Process p = pb.start();
-                startedFlag = true;
                 br = new BufferedReader(new InputStreamReader(p.getInputStream()));
                 c = new Catcher(br);
                 c.start();

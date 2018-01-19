@@ -195,7 +195,7 @@ public class ConnectionController {
             terminals = new String[20][5];
             num = 0;
             order = "RESTART";
-            sourceIp ="SourceIPs:";
+            sourceIp ="SourceIPs";
             System.out.println("接続待機に移行します");
             startedFlag = false;
         }

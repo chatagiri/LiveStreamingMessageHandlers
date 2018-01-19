@@ -62,6 +62,7 @@ public class MediaServer {
                 }
 
             } else if (line.startsWith("START")) {
+                startedFlag = true;
 
                 termInfo = line.split(":",20);
                 System.out.println("MixingForm: "+termInfo[1]);
@@ -147,8 +148,10 @@ public class MediaServer {
                 System.out.println(c.out.toString());
             } catch (Exception e) {
                 System.out.println("interrupt");
+                System.out.println(c.out.toString());
                 c.stop();
                 p.destroy();
+
             }
         }
     }
