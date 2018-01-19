@@ -65,6 +65,7 @@ public class LocalMixerTerminalClient {
                                 "-vsync","1", "-b:v", "2000k",
                                 "-f", "flv", "-vsync", "1","rtmp://localhost/live/mixed").redirectErrorStream(true);
                         pt = new processThread(pb);
+                        pt.run();
                         break;
 
                     // role: none

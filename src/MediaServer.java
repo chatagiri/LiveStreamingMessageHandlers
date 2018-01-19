@@ -75,6 +75,7 @@ public class MediaServer {
                                 "-i", "rtmp://"+termInfo[2]+ "/live/mixed",
                                 "-f", "flv", "rtmp://localhost/live/watch").redirectErrorStream(true);
                         pt1 = new processThread(pb1);
+                        pt1.run();
                         break;
 
                     // role: Mixer
@@ -89,6 +90,7 @@ public class MediaServer {
                                  "-vsync","1", "-b:v", "2000k",
                                  "-f", "flv", "-vsync", "1", "rtmp://localhost/live/watch").redirectErrorStream(true);
                         pt1 = new processThread(pb1);
+                        pt1.run();
                         break;
 
                     // role: relay
@@ -106,6 +108,8 @@ public class MediaServer {
 
                         pt1 = new processThread(pb1);
                         pt2 = new processThread(pb2);
+                        pt1.run();
+                        pt2.run();
                         relayFlag = true;
 
                 }

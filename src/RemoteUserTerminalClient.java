@@ -87,6 +87,7 @@ public class RemoteUserTerminalClient {
                                 "-vsync","1", "-b:v", "2000k",
                                 "-f", "flv", "-vsync", "1", "rtmp://localhost/live/watch").redirectErrorStream(true);
                         pt = new processThread(pb);
+                        pt.run();
                         System.out.println("視聴用URL : rtmp://"+ myLocalIp + "/live/watch" );
                         // ffmpeg実行
                         break;
