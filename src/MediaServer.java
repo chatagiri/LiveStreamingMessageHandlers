@@ -54,6 +54,7 @@ public class MediaServer {
                         relayFlag = false;
                     }
                     else{
+                        System.out.println("interrupt OK");
                         pt1.interrupt();
                     }
                     startedFlag = false;

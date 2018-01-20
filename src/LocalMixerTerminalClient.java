@@ -123,8 +123,8 @@ public class LocalMixerTerminalClient {
                 System.out.println(c.out.toString());
             } catch (Exception e) {
                 System.out.println("interrupt");
-                p.destroy();
                 System.out.println(c.out.toString());
+                p.destroy();
                 c.stop();
             }
         }

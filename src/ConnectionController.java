@@ -180,6 +180,7 @@ public class ConnectionController {
 
     // 接続開始
     public void connectStart() {
+        int i = 0;
         String order = "";
         nwWidth = Integer.parseInt(nwField.getText());
         makemsg();
@@ -192,6 +193,7 @@ public class ConnectionController {
         }
         else{
             // 再構成
+            i++;
             terminals = new String[20][5];
             num = 0;
             order = "RESTART";
@@ -204,6 +206,11 @@ public class ConnectionController {
         for (PrintWriter writer : writers) {
             writer.println(order);
         }
+
+        if(i>0)
+            writers.clear();
+
+
     }
 
     // ミキシング箇所制定

@@ -53,7 +53,7 @@ public class RemoteUserTerminalClient {
             } else if (line.startsWith("MESSAGE")) {
                 System.out.println("Message:" + line);
             } else if (line.startsWith("START")) {
-                startedFlag = true;
+
 
                 System.out.println("Starting Connection");
                 termInfo = line.split(":",20);
@@ -93,6 +93,7 @@ public class RemoteUserTerminalClient {
                         // ffmpeg実行
                         break;
                 }
+                //startedFlag = true;
             }else if(line.startsWith("RESTART")){
                 if(startedFlag == true){
                     pt.interrupt();
@@ -122,6 +123,7 @@ public class RemoteUserTerminalClient {
         public void run(){
             BufferedReader br;
             Catcher c = null;
+            startedFlag = true;
             try {
                 Process p = pb.start();
                 br = new BufferedReader(new InputStreamReader(p.getInputStream()));
@@ -132,8 +134,10 @@ public class RemoteUserTerminalClient {
                 System.out.println(c.out.toString());
             } catch (Exception e) {
                 System.out.println("interrupt");
-                c.stop();
+                System.out.println(c.out.toString());
                 p.destroy();
+                c.stop();
+
             }
         }
     }
