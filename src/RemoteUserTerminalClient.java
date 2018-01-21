@@ -53,8 +53,6 @@ public class RemoteUserTerminalClient {
             } else if (line.startsWith("MESSAGE")) {
                 System.out.println("Message:" + line);
             } else if (line.startsWith("START")) {
-
-
                 System.out.println("Starting Connection");
                 termInfo = line.split(":",20);
                 // ミキシング箇所によってコマンド変更

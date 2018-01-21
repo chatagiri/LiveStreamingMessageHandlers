@@ -49,13 +49,14 @@ public class MediaServer {
                 System.out.println("Message:" + line);
             } else if (line.startsWith("RESTART")) {
                 if (startedFlag == true) {
+                    System.out.println("restart receive");
                     if (relayFlag == true) {
-                        pt1.writeq();
-                        pt2.writeq();
+                        pt1.p.destroyForcibly();
+                        pt1.p.destroyForcibly();
                         relayFlag = false;
-                    } else {
+                    } else if(relayFlag == false) {
                         System.out.println("interrupt OK");
-                        pt1.writeq();
+                        pt1.p.destroyForcibly();
                     }
                     startedFlag = false;
                     out.println("Server:strserver:" + myLocalIp + ":" + cpuPerf);
@@ -131,6 +132,8 @@ public class MediaServer {
         private PrintWriter r1;
         private ProcessBuilder pb;
         private volatile boolean done = false;
+        Catcher c = null;
+        Process p = null;
 
         public processThread(ProcessBuilder pb) throws InterruptedException {
             this.pb = pb;
@@ -139,8 +142,7 @@ public class MediaServer {
         public void run() {
             BufferedReader br;
 
-            Catcher c = null;
-            Process p = null;
+
             try {
                 try {
                     p = pb.start();
@@ -164,6 +166,7 @@ public class MediaServer {
         }
 
         void writeq() {
+            System.out.println("writeq");
             r1.println("q");
         }
     }
