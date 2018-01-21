@@ -157,8 +157,8 @@ public class MediaServer {
                 r1 = new PrintWriter(p.getOutputStream(),true);
                 Thread.sleep(6000);
                 System.out.println("sleep done");
-                p.waitFor();
-                p.destroy();
+                //p.waitFor();
+                //p.destroy();
                 System.out.println(c.out.toString());
             } catch (InterruptedException e) {
                 System.out.println("interrupt");
