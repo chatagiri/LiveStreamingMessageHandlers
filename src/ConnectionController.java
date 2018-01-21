@@ -210,7 +210,6 @@ public class ConnectionController {
         if(i>0)
             writers.clear();
 
-
     }
 
     // ミキシング箇所制定

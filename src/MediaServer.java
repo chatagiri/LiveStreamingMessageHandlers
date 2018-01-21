@@ -13,6 +13,8 @@ public class MediaServer {
     BufferedReader in;
     PrintWriter out;
     ProcessBuilder pb1, pb2;
+    processThread pt1 = null;
+    processThread pt2 = null;
     // PrintWriter r1, r2;
     Process p1, p2;
     Catcher c1, c2;
@@ -24,9 +26,6 @@ public class MediaServer {
     String controllerIp = "172.16.126.91";
 
     private void run(String cpuPerf) throws IOException, InterruptedException {
-
-        processThread pt1 = null;
-        processThread pt2 = null;
 
         // Make connection and initialize streams
         String myrole = "StreamingServer";
@@ -51,12 +50,11 @@ public class MediaServer {
                 if (startedFlag == true) {
                     System.out.println("restart receive");
                     if (relayFlag == true) {
-                        pt1.p.destroyForcibly();
-                        pt1.p.destroyForcibly();
-                        relayFlag = false;
+                       pt1.interrupt();
+                       pt2.interrupt();relayFlag = false;
                     } else if(relayFlag == false) {
+                        pt1.interrupt();
                         System.out.println("interrupt OK");
-                        pt1.p.destroyForcibly();
                     }
                     startedFlag = false;
                     out.println("Server:strserver:" + myLocalIp + ":" + cpuPerf);
@@ -109,11 +107,12 @@ public class MediaServer {
                                 "-vcodec", "copy", "-acodec", "copy",
                                 "-f", "flv", "rtmp://" + termInfo[2] + "/live/2").redirectErrorStream(true);
 
+                        relayFlag = true;
                         pt1 = new processThread(pb1);
                         pt2 = new processThread(pb2);
                         pt1.run();
                         pt2.run();
-                        relayFlag = true;
+
 
                 }
             }
@@ -141,8 +140,6 @@ public class MediaServer {
 
         public void run() {
             BufferedReader br;
-
-
             try {
                 try {
                     p = pb.start();
@@ -153,18 +150,16 @@ public class MediaServer {
                 br = new BufferedReader(new InputStreamReader(p.getInputStream()));
                 c = new Catcher(br);
                 c.start();
-                r1 = new PrintWriter(p.getOutputStream());
+                r1 = new PrintWriter(p.getOutputStream(),true);
                 p.waitFor();
                 p.destroy();
                 System.out.println(c.out.toString());
             } catch (InterruptedException e) {
                 System.out.println("interrupt");
                 System.out.println(c.out.toString());
-
-                p.destroy();
+                p.destroyForcibly();
             }
         }
-
         void writeq() {
             System.out.println("writeq");
             r1.println("q");
