@@ -132,7 +132,7 @@ public class RemoteUserTerminalClient {
                 System.out.println(c.out.toString());
             } catch (Exception e) {
                 System.out.println("interrupt");
-                System.out.println(c.out.toString());
+               // System.out.println(c.out.toString());
                 p.destroyForcibly();
 
             }

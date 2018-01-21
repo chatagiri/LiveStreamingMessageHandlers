@@ -18,6 +18,7 @@ public class Catcher extends Thread{
         try {
             while ((c = in.read()) != -1) {
                 out.write((char)c);
+              //  System.out.println(c);
             }
         } catch (IOException e) {
             e.printStackTrace();

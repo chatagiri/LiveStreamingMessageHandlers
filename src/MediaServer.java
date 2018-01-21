@@ -13,8 +13,7 @@ public class MediaServer {
     BufferedReader in;
     PrintWriter out;
     ProcessBuilder pb1, pb2;
-    processThread pt1 = null;
-    processThread pt2 = null;
+
     // PrintWriter r1, r2;
     Process p1, p2;
     Catcher c1, c2;
@@ -26,6 +25,9 @@ public class MediaServer {
     String controllerIp = "172.16.126.91";
 
     private void run(String cpuPerf) throws IOException, InterruptedException {
+
+        processThread pt1 = null;
+        processThread pt2 = null;
 
         // Make connection and initialize streams
         String myrole = "StreamingServer";
@@ -51,7 +53,8 @@ public class MediaServer {
                     System.out.println("restart receive");
                     if (relayFlag == true) {
                        pt1.interrupt();
-                       pt2.interrupt();relayFlag = false;
+                       pt2.interrupt();
+                       relayFlag = false;
                     } else if(relayFlag == false) {
                         pt1.interrupt();
                         System.out.println("interrupt OK");
@@ -98,12 +101,12 @@ public class MediaServer {
                     case "Remote":
 
                         pb1 = new ProcessBuilder("ffmpeg",
-                                "-i", "rtmp://localhost/live/1",
+                                "-i", "rtmp://"+myLocalIp+"/live/1",
                                 "-vcodec", "copy", "-acodec", "copy",
                                 "-f", "flv", "rtmp://" + termInfo[2] + "/live/1").redirectErrorStream(true);
 
                         pb2 = new ProcessBuilder("ffmpeg",
-                                "-i", "rtmp://localhost/live/2",
+                                "-i", "rtmp://"+myLocalIp+"/live/2",
                                 "-vcodec", "copy", "-acodec", "copy",
                                 "-f", "flv", "rtmp://" + termInfo[2] + "/live/2").redirectErrorStream(true);
 
@@ -131,8 +134,8 @@ public class MediaServer {
         private PrintWriter r1;
         private ProcessBuilder pb;
         private volatile boolean done = false;
-        Catcher c = null;
-        Process p = null;
+        private Catcher c = null;
+        private Process p = null;
 
         public processThread(ProcessBuilder pb) throws InterruptedException {
             this.pb = pb;
@@ -160,10 +163,5 @@ public class MediaServer {
                 p.destroyForcibly();
             }
         }
-        void writeq() {
-            System.out.println("writeq");
-            r1.println("q");
-        }
     }
-
 }

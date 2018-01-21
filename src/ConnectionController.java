@@ -274,6 +274,7 @@ public class ConnectionController {
                 form = "Remote";
             }
         }
+
         System.out.println("MixingForm = " + form);
     }
 }
