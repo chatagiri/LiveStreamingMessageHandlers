@@ -13,8 +13,9 @@ public class MediaServer {
     BufferedReader in;
     PrintWriter out;
     ProcessBuilder pb1, pb2;
-    Process p1 , p2;
-    Catcher c1 , c2;
+    // PrintWriter r1, r2;
+    Process p1, p2;
+    Catcher c1, c2;
     BufferedReader br1, br2;
     String[] termInfo;
     // termInfo[0] = msg prefix "START"
@@ -41,40 +42,39 @@ public class MediaServer {
             String line = in.readLine();
             System.out.println(line);
             if (line.startsWith("SUBMITNAME")) {
-                out.println("Server:strserver:"+ myLocalIp + ":"+cpuPerf);
+                out.println("Server:strserver:" + myLocalIp + ":" + cpuPerf);
             } else if (line.startsWith("NAMEACCEPTED")) {
                 System.out.println("Name Accepted.");
             } else if (line.startsWith("MESSAGE")) {
                 System.out.println("Message:" + line);
-            }else if(line.startsWith("RESTART")){
-                if(startedFlag == true){
-                    if(relayFlag == true){
-                        pt1.interrupt();
-                        pt2.interrupt();
+            } else if (line.startsWith("RESTART")) {
+                if (startedFlag == true) {
+                    if (relayFlag == true) {
+                        pt1.writeq();
+                        pt2.writeq();
                         relayFlag = false;
-                    }
-                    else{
+                    } else {
                         System.out.println("interrupt OK");
-                        pt1.interrupt();
+                        pt1.writeq();
                     }
                     startedFlag = false;
-                    out.println("Server:strserver:"+ myLocalIp + ":"+cpuPerf);
+                    out.println("Server:strserver:" + myLocalIp + ":" + cpuPerf);
                     System.out.println("waiting for start message...");
                 }
 
             } else if (line.startsWith("START")) {
                 startedFlag = true;
 
-                termInfo = line.split(":",20);
-                System.out.println("MixingForm: "+termInfo[1]);
+                termInfo = line.split(":", 20);
+                System.out.println("MixingForm: " + termInfo[1]);
                 // ミキシング箇所によってコマンド変更
                 // termInfo[] = { prefix, form, mixerIp, source...
-                switch(termInfo[1]){
+                switch (termInfo[1]) {
                     // role : streamer
                     case "Local":
                         System.out.println("you'll be a STREAMER");
                         pb1 = new ProcessBuilder("ffmpeg",
-                                "-i", "rtmp://"+termInfo[2]+ "/live/mixed",
+                                "-i", "rtmp://" + termInfo[2] + "/live/mixed",
                                 "-f", "flv", "rtmp://localhost/live/watch").redirectErrorStream(true);
                         pt1 = new processThread(pb1);
                         pt1.run();
@@ -82,15 +82,15 @@ public class MediaServer {
 
                     // role: Mixer
                     case "Server":
-                         System.out.println("you'll be a Mixer");
-                         pb1 = new ProcessBuilder("ffmpeg",
-                                "-i", "rtmp://"+myLocalIp+ "/live/1",
-                                "-i", "rtmp://"+myLocalIp+"/live/2",
-                                 "-threads","0",
-                                 "-filter_complex", "hstack,scale=1920x1080",
-                                 "-vcodec", "libx264", "-max_interleave_delta", "0",
-                                 "-vsync","1", "-b:v", "2000k",
-                                 "-f", "flv", "-vsync", "1", "rtmp://localhost/live/watch").redirectErrorStream(true);
+                        System.out.println("you'll be a Mixer");
+                        pb1 = new ProcessBuilder("ffmpeg",
+                                "-i", "rtmp://" + myLocalIp + "/live/1",
+                                "-i", "rtmp://" + myLocalIp + "/live/2",
+                                "-threads", "0",
+                                "-filter_complex", "hstack,scale=1920x1080",
+                                "-vcodec", "libx264", "-max_interleave_delta", "0",
+                                "-vsync", "1", "-b:v", "2000k",
+                                "-f", "flv", "-vsync", "1", "rtmp://localhost/live/watch").redirectErrorStream(true);
                         pt1 = new processThread(pb1);
                         pt1.run();
                         break;
@@ -101,12 +101,12 @@ public class MediaServer {
                         pb1 = new ProcessBuilder("ffmpeg",
                                 "-i", "rtmp://localhost/live/1",
                                 "-vcodec", "copy", "-acodec", "copy",
-                                "-f", "flv", "rtmp://"+termInfo[2]+"/live/1").redirectErrorStream(true);
+                                "-f", "flv", "rtmp://" + termInfo[2] + "/live/1").redirectErrorStream(true);
 
                         pb2 = new ProcessBuilder("ffmpeg",
-                            "-i", "rtmp://localhost/live/2",
-                            "-vcodec", "copy", "-acodec", "copy",
-                            "-f", "flv", "rtmp://"+termInfo[2]+"/live/2").redirectErrorStream(true);
+                                "-i", "rtmp://localhost/live/2",
+                                "-vcodec", "copy", "-acodec", "copy",
+                                "-f", "flv", "rtmp://" + termInfo[2] + "/live/2").redirectErrorStream(true);
 
                         pt1 = new processThread(pb1);
                         pt2 = new processThread(pb2);
@@ -118,42 +118,54 @@ public class MediaServer {
             }
         }
     }
+
     public static void main(String[] args) throws Exception {
         String cpuPerf = "20";
-        if(args.length == 1)
-            cpuPerf =args[0];
+        if (args.length == 1)
+            cpuPerf = args[0];
         MediaServer ms = new MediaServer();
         ms.run(cpuPerf);
     }
 
     class processThread extends Thread {
+        private PrintWriter r1;
         private ProcessBuilder pb;
         private volatile boolean done = false;
 
-        public processThread(ProcessBuilder pb) {
+        public processThread(ProcessBuilder pb) throws InterruptedException {
             this.pb = pb;
         }
 
         public void run() {
             BufferedReader br;
+
             Catcher c = null;
             Process p = null;
             try {
-                p = pb.start();
+                try {
+                    p = pb.start();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
                 startedFlag = true;
                 br = new BufferedReader(new InputStreamReader(p.getInputStream()));
                 c = new Catcher(br);
                 c.start();
+                r1 = new PrintWriter(p.getOutputStream());
                 p.waitFor();
                 p.destroy();
                 System.out.println(c.out.toString());
-            } catch (Exception e) {
+            } catch (InterruptedException e) {
                 System.out.println("interrupt");
                 System.out.println(c.out.toString());
-                c.stop();
-                p.destroy();
 
+                p.destroy();
             }
         }
+
+        void writeq() {
+            r1.println("q");
+        }
     }
+
 }

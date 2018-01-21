@@ -80,10 +80,7 @@ public class LocalMixerTerminalClient {
                 }
             }else if(line.startsWith("RESTART")){
                 // 再接続処理
-                if(startedFlag == true){
-                    pt.interrupt();
 
-                }
                 out.println("Local:localMixer:"+ myLocalIp + ":"+cpuPerf);
                 System.out.println("Reconnected to controller.");
                 startedFlag = false;
@@ -111,21 +108,18 @@ public class LocalMixerTerminalClient {
 
         public void run(){
             BufferedReader br;
-            Catcher c = null;
+           // Catcher c = null;
             try {
                 Process p = pb.start();
                 startedFlag = true;
                 br = new BufferedReader(new InputStreamReader(p.getInputStream()));
-                c = new Catcher(br);
+                Catcher c = new Catcher(br);
                 c.start();
                 p.waitFor();
                 p.destroy();
                 System.out.println(c.out.toString());
             } catch (Exception e) {
                 System.out.println("interrupt");
-                System.out.println(c.out.toString());
-                p.destroy();
-                c.stop();
             }
         }
     }
