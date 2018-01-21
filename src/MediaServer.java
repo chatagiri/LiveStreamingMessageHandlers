@@ -152,8 +152,11 @@ public class MediaServer {
                 startedFlag = true;
                 br = new BufferedReader(new InputStreamReader(p.getInputStream()));
                 c = new Catcher(br);
+                System.out.println("catcher") ;
                 c.start();
                 r1 = new PrintWriter(p.getOutputStream(),true);
+                Thread.sleep(6000);
+                System.out.println("sleep done");
                 p.waitFor();
                 p.destroy();
                 System.out.println(c.out.toString());
