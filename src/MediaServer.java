@@ -76,7 +76,7 @@ public class MediaServer {
                     case "Local":
                         System.out.println("you'll be a STREAMER");
                         pb1 = new ProcessBuilder("ffmpeg",
-                                "-i", "rtmp://" + termInfo[2] + "/live/mixed",
+                                "-i", "rtmp://localhost/live/mixed",
                                 " -vcodec", "copy", "-acodec", "copy",
                                 "-f", "flv", "rtmp://localhost/live/watch").redirectErrorStream(true);
                         pt1 = new processThread(pb1);

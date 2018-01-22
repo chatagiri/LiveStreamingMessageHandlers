@@ -63,7 +63,7 @@ public class LocalMixerTerminalClient {
                                 "-filter_complex", "hstack,scale=1280x720",
                                 "-vcodec", "libx264", "-max_interleave_delta", "0",
                                 "-vsync","1", "-b:v","800k",
-                                "-f", "flv", "-vsync", "1","rtmp://localhost/live/mixed").redirectErrorStream(true);
+                                "-f", "flv", "-vsync", "1","rtmp://172.16.126.95/live/mixed").redirectErrorStream(true);
                         pt = new processThread(pb);
                         pt.run();
                         break;
