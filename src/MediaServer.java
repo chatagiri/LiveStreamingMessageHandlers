@@ -147,7 +147,7 @@ public class MediaServer {
         public void run() {
             pb.redirectErrorStream(true);
             BufferedReader br;
-            try {
+
                 try {
                     p = pb.start();
 
