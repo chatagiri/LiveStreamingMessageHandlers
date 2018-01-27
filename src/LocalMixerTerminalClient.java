@@ -62,7 +62,7 @@ public class LocalMixerTerminalClient {
                                 "-threads","0",
                                 "-filter_complex", "hstack,scale=1280x720",
                                 "-vcodec", "libx264", "-max_interleave_delta", "0",
-                                "-vsync","1", "-b:v","800k",
+                                "-vsync","1", "-b:v","1500k",
                                 "-f", "flv", "-vsync", "1","rtmp://172.16.126.95/live/mixed").redirectErrorStream(true);
                         pt = new processThread(pb);
                         pt.run();
@@ -115,11 +115,12 @@ public class LocalMixerTerminalClient {
                 br = new BufferedReader(new InputStreamReader(p.getInputStream()));
                 Catcher c = new Catcher(br);
                 c.start();
-                p.waitFor();
-                p.destroy();
+               // p.waitFor();
+             //   p.destroy();
                 System.out.println(c.out.toString());
             } catch (Exception e) {
                 System.out.println("interrupt");
+                p.destroyForcibly();
             }
         }
     }

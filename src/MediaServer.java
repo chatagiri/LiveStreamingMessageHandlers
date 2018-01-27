@@ -1,3 +1,5 @@
+import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils;
+
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -92,7 +94,7 @@ public class MediaServer {
                                 "-threads", "0",
                                 "-filter_complex", "hstack,scale=1280x720",
                                 "-vcodec", "libx264", "-max_interleave_delta", "0",
-                                "-vsync", "1", "-b:v", "800k",
+                                "-vsync", "1", "-b:v", "1500k",
                                 "-f", "flv", "-vsync", "1", "rtmp://localhost/live/watch").redirectErrorStream(true);
                         pt1 = new processThread(pb1);
                         pt1.run();
@@ -143,29 +145,30 @@ public class MediaServer {
         }
 
         public void run() {
+            pb.redirectErrorStream(true);
             BufferedReader br;
-            try {
                 try {
                     p = pb.start();
-                } catch (IOException e) {
-                    e.printStackTrace();
+
+                    startedFlag = true;
+                    InputStream is = p.getInputStream();
+
+                    br = new BufferedReader(new InputStreamReader(p.getInputStream()));
+
+
+                    //c = new Catcher(br);
+                    // System.out.println("catcher") ;
+                    //c.start();
+                    //r1 = new PrintWriter(p.getOutputStream(),true);
+                    Thread.sleep(1000);
+                    System.out.println("sleep done");
+                    //p.waitFor();
+                    //p.destroy();
+                    //System.out.println(c.out.toString());
+                } catch (Exception e) {
+                    p.destroyForcibly();
                 }
-                startedFlag = true;
-                br = new BufferedReader(new InputStreamReader(p.getInputStream()));
-                c = new Catcher(br);
-                System.out.println("catcher") ;
-                c.start();
-                r1 = new PrintWriter(p.getOutputStream(),true);
-                Thread.sleep(6000);
-                System.out.println("sleep done");
-                //p.waitFor();
-                //p.destroy();
-                System.out.println(c.out.toString());
-            } catch (InterruptedException e) {
-                System.out.println("interrupt");
-                System.out.println(c.out.toString());
-                p.destroyForcibly();
-            }
+
         }
     }
 }

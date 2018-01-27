@@ -83,7 +83,7 @@ public class RemoteUserTerminalClient {
                                 "-threads","0",
                                 "-filter_complex", "hstack,scale=1280x720",
                                 "-vcodec", "libx264", "-max_interleave_delta", "0",
-                                "-vsync","1", "-b:v", "800k",
+                                "-vsync","1", "-b:v", "1500k",
                                 "-f", "flv", "-vsync", "1", "rtmp://localhost/live/watch").redirectErrorStream(true);
                         pt = new processThread(pb);
                         pt.run();
@@ -128,7 +128,7 @@ public class RemoteUserTerminalClient {
                 c = new Catcher(br);
                 c.start();
                 p.waitFor();
-                p.destroy();
+                //p.destroy();
                 System.out.println(c.out.toString());
             } catch (Exception e) {
                 System.out.println("interrupt");
