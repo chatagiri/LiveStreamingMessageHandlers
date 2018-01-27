@@ -163,7 +163,7 @@ public class MediaServer {
                     //r1 = new PrintWriter(p.getOutputStream(),true);
                     //p.waitFor();
                     //p.destroy();
-                    //System.out.println(c.out.toString());
+                    System.out.println(c.out.toString());
                 } catch (Exception e) {
                     p.destroyForcibly();
                 }
