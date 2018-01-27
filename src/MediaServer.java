@@ -155,15 +155,11 @@ public class MediaServer {
 
                     startedFlag = true;
                     InputStream is = p.getInputStream();
-                    int read;
                     br = new BufferedReader(new InputStreamReader(p.getInputStream()));
 
-                    //c = new Catcher(br);
-                    while ((read = br.read()) != -1){
-                        System.out.println(read);
-                    }
+                    c = new Catcher(br);
                     // System.out.println("catcher") ;
-                    //c.start();
+                    c.start();
                     //r1 = new PrintWriter(p.getOutputStream(),true);
                     //p.waitFor();
                     //p.destroy();
