@@ -63,9 +63,11 @@ public class MediaServer {
                         System.out.println("interrupt OK");
                     }
                     startedFlag = false;
-                    out.println("Server:strserver:" + myLocalIp + ":" + cpuPerf);
+                    Thread.sleep(5000);
                     System.out.println("waiting for start message...");
                 }
+
+                out.println("Server:strserver:" + myLocalIp + ":" + cpuPerf);
 
             } else if (line.startsWith("START")) {
                 startedFlag = true;
@@ -153,16 +155,16 @@ public class MediaServer {
 
                     startedFlag = true;
                     InputStream is = p.getInputStream();
-
+                    int read;
                     br = new BufferedReader(new InputStreamReader(p.getInputStream()));
 
-
                     //c = new Catcher(br);
+                    while ((read = br.read()) != -1){
+                        System.out.println(read);
+                    }
                     // System.out.println("catcher") ;
                     //c.start();
                     //r1 = new PrintWriter(p.getOutputStream(),true);
-                    Thread.sleep(1000);
-                    System.out.println("sleep done");
                     //p.waitFor();
                     //p.destroy();
                     //System.out.println(c.out.toString());
